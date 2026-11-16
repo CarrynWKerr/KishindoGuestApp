@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Kishindo Conservation Reserve — Pre-Arrival Guest Experience</title>
+  
+  <!-- Favicon / Meta -->
+  <meta name="theme-color" content="#FAF9F6">
+  <meta name="description" content="Kishindo Conservation Reserve — Pre-Arrival Concierge & Guest Experience">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Firebase SDK (v10 Compat for static hosting without bundlers) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       APPLICATION HEADER
+       ══════════════════════════════════════════════════════════════ -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-link" onclick="window.KishindoApp.logout()">
+        <!-- High-Resolution Kishindo Logo (Crane in flight + Ochre Sun Disc) -->
+        <svg class="logo-symbol" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Sunset Ochre Circle from Rate Card -->
+          <circle cx="56" cy="46" r="38" fill="#D37233" />
+          <!-- Blue Crane silhouette in flight -->
+          <path d="M18 68C22 62 28 54 36 49C30 45 22 41 12 39C16 43 23 48 30 52C26 55 21 60 18 68Z" fill="#141715" />
+          <path d="M36 49C44 44 54 41 68 40C61 43 54 48 48 53C56 50 66 48 78 48C70 52 61 57 54 62C62 59 71 58 82 58C73 63 63 68 53 73C44 77 34 78 26 76C32 72 38 66 42 60C38 61 34 63 29 65C34 60 38 55 36 49Z" fill="#141715" />
+          <circle cx="72" cy="34" r="2.5" fill="#141715" />
+          <path d="M73 34L85 32L74 36" stroke="#141715" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+        <div class="brand-text">
+          <span class="brand-title">Kishindo</span>
+          <span class="brand-subtitle">Conservation Reserve</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="https://www.kishindowild.com" target="_blank" class="btn btn-outline btn-sm no-print">Website</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 1: AUTHENTICATION (Guest PIN & Staff Access)
+       ══════════════════════════════════════════════════════════════ -->
+  <main id="authScreen" class="screen active">
+    <div class="content-wrap" style="max-width: 540px;">
+      <div class="auth-hero">
+        <svg class="logo-center" viewBox="0 0 100 100" fill="none">
+          <circle cx="56" cy="46" r="38" fill="#D37233" />
+          <path d="M18 68C22 62 28 54 36 49C30 45 22 41 12 39C16 43 23 48 30 52C26 55 21 60 18 68Z" fill="#141715" />
+          <path d="M36 49C44 44 54 41 68 40C61 43 54 48 48 53C56 50 66 48 78 48C70 52 61 57 54 62C62 59 71 58 82 58C73 63 63 68 53 73C44 77 34 78 26 76C32 72 38 66 42 60C38 61 34 63 29 65C34 60 38 55 36 49Z" fill="#141715" />
+          <circle cx="72" cy="34" r="2.5" fill="#141715" />
+          <path d="M73 34L85 32L74 36" stroke="#141715" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+        <h1 class="auth-title">Welcome to Kishindo</h1>
+        <p class="auth-subquote">
+          “Where safari feels different in the best way. Guided by ethical, responsible tourism, every stay is an unforgettable journey through conservation, community, and wild open spaces.”
+        </p>
+
+        <div class="auth-tabs">
+          <button class="auth-tab-btn active" data-role="guest" onclick="window.KishindoApp.switchAuthTab('guest')">Guest Access</button>
+          <button class="auth-tab-btn" data-role="staff" onclick="window.KishindoApp.switchAuthTab('staff')">Lodge Anchor</button>
+        </div>
+      </div>
+
+      <!-- Guest PIN Entry -->
+      <div id="guestAuthTab" class="card-white" style="box-shadow: var(--shadow-elevated);">
+        <div class="banner-card" style="text-align: center;">Enter Your 4-Digit Suite PIN</div>
+        <div class="card-body" style="text-align: center;">
+          <p style="font-size: 13px; color: var(--charcoal-muted); margin-bottom: 20px;">
+            Please enter the personal 4-digit PIN provided in your welcome email from Reservations.
+          </p>
+          <div class="pin-inputs" id="guestPinInputs">
+            <input type="tel" maxlength="1" class="pin-box" value="" autofocus>
+            <input type="tel" maxlength="1" class="pin-box" value="">
+            <input type="tel" maxlength="1" class="pin-box" value="">
+            <input type="tel" maxlength="1" class="pin-box" value="">
+          </div>
+          <div id="guestPinError" class="error-banner"></div>
+          <button class="btn btn-ochre btn-full" onclick="window.KishindoApp.handleGuestLogin()">Unlock My Pre-Arrival Form</button>
+          <p style="font-size: 11px; color: var(--charcoal-muted); margin-top: 18px;">
+            Demo PIN for testing: <strong style="color:var(--brand-ochre);">4821</strong> (Suite Ussuri)
+          </p>
+        </div>
+      </div>
+
+      <!-- Staff PIN Entry -->
+      <div id="staffAuthTab" class="card-white" style="display: none; box-shadow: var(--shadow-elevated);">
+        <div class="banner-card" style="text-align: center;">Lodge Staff & Operations Login</div>
+        <div class="card-body" style="text-align: center;">
+          <p style="font-size: 13px; color: var(--charcoal-muted); margin-bottom: 20px;">
+            Enter staff PIN to access booking management, rooming lists, operations summaries, and data exports.
+          </p>
+          <div class="pin-inputs" id="staffPinInputs">
+            <input type="tel" maxlength="1" class="pin-box" value="">
+            <input type="tel" maxlength="1" class="pin-box" value="">
+            <input type="tel" maxlength="1" class="pin-box" value="">
+            <input type="tel" maxlength="1" class="pin-box" value="">
+          </div>
+          <div id="staffPinError" class="error-banner"></div>
+          <button class="btn btn-primary btn-full" onclick="window.KishindoApp.handleStaffLogin()">Access Lodge Operations</button>
+          <p style="font-size: 11px; color: var(--charcoal-muted); margin-top: 18px;">
+            Default Staff PIN: <strong style="color:var(--brand-ochre);">1234</strong>
+          </p>
+        </div>
+      </div>
+
+      <!-- Conservation Affiliations Footer from Rate Card p. 1 -->
+      <div style="text-align:center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-light); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--charcoal-muted);">
+        ATTA · Cheetah Metapopulation Initiative · SATSA · Endangered Wildlife Trust
+      </div>
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 2: GUEST WELCOME & SUITE OVERVIEW
+       ══════════════════════════════════════════════════════════════ -->
+  <main id="guestWelcomeScreen" class="screen">
+    <div class="content-wrap">
+      
+      <!-- Suite Showcase Banner (from Rate Card p. 2) -->
+      <div class="suite-hero-card">
+        <div class="suite-banner">
+          <span class="suite-banner-title">Your Assigned Sanctuary</span>
+          <span style="font-size: 11px; font-weight: 600; color: var(--brand-ochre);">Kishindo Canyon Lodge</span>
+        </div>
+        <div class="card-body">
+          <p style="font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brand-ochre);">Suite Details</p>
+          <h2 id="welcomeSuiteTitle" class="suite-name-big">Ussuri</h2>
+          <p id="welcomeSuiteDesc" class="suite-description-text"></p>
+          
+          <div id="welcomeAmenities" class="suite-amenities-row"></div>
+
+          <div class="stay-meta-grid">
+            <div class="meta-box">
+              <span class="meta-label">Check-in</span>
+              <span id="welcomeCheckIn" class="meta-value">14 December 2026</span>
+              <span style="font-size: 11px; color: var(--brand-ochre); margin-top: 2px;">Prompt 14h00 required</span>
+            </div>
+            <div class="meta-box">
+              <span class="meta-label">Check-out</span>
+              <span id="welcomeCheckOut" class="meta-value">18 December 2026</span>
+              <span style="font-size: 11px; color: var(--charcoal-muted); margin-top: 2px;">Strictly 10h00</span>
+            </div>
+            <div class="meta-box">
+              <span class="meta-label">Duration</span>
+              <span id="welcomeNights" class="meta-value">4 Nights</span>
+            </div>
+            <div class="meta-box">
+              <span class="meta-label">Bed Setup</span>
+              <span id="welcomeBedConfig" class="meta-value">King Bed</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pre-Arrival Invitation -->
+      <div class="card-white" style="text-align: center;">
+        <div class="banner-card">Curating Your Wilderness Experience</div>
+        <div class="card-body" style="padding: 36px 32px;">
+          <p style="font-size: 15px; max-width: 620px; margin: 0 auto 24px; color: var(--charcoal-dark); line-height: 1.8;">
+            As Kishindo is an exclusive, remote wilderness reserve, each stay is prepared with personal care in advance. 
+            The information you provide allows our lodge chefs, trackers, and guiding team to thoughtfully prepare for your arrival.
+          </p>
+          <p class="editorial-italic" style="font-size: 16px; color: var(--charcoal-muted); margin-bottom: 28px;">
+            One form per suite is sufficient. You may return and edit your responses at any time prior to arrival.
+          </p>
+          <button id="welcomeCtaBtn" class="btn btn-ochre" style="padding: 14px 38px;" onclick="window.KishindoApp.startGuestForm()">
+            Curate Your Stay →
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 3: 17-SECTION MULTI-STEP GUEST INFORMATION FORM
+       ══════════════════════════════════════════════════════════════ -->
+  <main id="guestFormScreen" class="screen">
+    <div class="content-wrap" style="max-width: 720px;">
+      
+      <!-- Progress Bar -->
+      <div class="form-progress-wrap">
+        <div class="progress-track">
+          <div id="formProgressFill" class="progress-fill"></div>
+        </div>
+        <div class="progress-status-bar">
+          <span id="formProgressText">Step 1 of 12 — Welcome</span>
+          <span id="autosavePill" class="autosave-pill">Autosaving…</span>
+        </div>
+      </div>
+
+      <div class="card-white" style="box-shadow: var(--shadow-elevated);">
+        <div class="card-body" style="padding: 36px 38px;">
+
+          <!-- ── Section 1: Welcome & Contact ── -->
+          <div id="sec-welcome" class="step-container active">
+            <div class="step-header">
+              <div class="step-number">Section 1 of 17</div>
+              <h2 class="step-title">Welcome & Primary Contact</h2>
+              <p class="step-lead">Please provide the primary contact email address for all communications leading up to your stay.</p>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Primary Contact Email <span class="req">*</span></label>
+              <input type="email" name="PrimaryEmail" placeholder="e.g. emily@example.com" required>
+              <p class="field-helper">We will send your itinerary updates and arrival confirmations here.</p>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Booking Agency <span style="font-weight:400;color:var(--charcoal-muted);">(if applicable)</span></label>
+              <input type="text" name="BookingAgency" placeholder="e.g. Tears Travel, Wilderness Safaris, or Private Direct">
+            </div>
+          </div>
+
+          <!-- ── Section 2: Dates of Stay ── -->
+          <div id="sec-stay" class="step-container">
+            <div class="step-header">
+              <div class="step-number">Section 2 of 17</div>
+              <h2 class="step-title">Dates of Stay</h2>
+              <p class="step-lead">Please confirm your planned check-in and check-out dates.</p>
+            </div>
+            <div class="field-row-2">
+              <div class="field-group">
+                <label class="field-label">Check-in Date <span class="req">*</span></label>
+                <input type="date" name="CheckInDate" required>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Check-out Date <span class="req">*</span></label>
+                <input type="date" name="CheckOutDate" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Section 3: Guest Names & Previous Visits ── -->
+          <div id="sec-names" class="step-container">
+            <div class="step-header">
+              <div class="step-number">Section 3 of 17</div>
+              <h2 class="step-title">Guest Names</h2>
+              <p class="step-lead">Please list the guests sharing this suite (up to two guests per suite).</p>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Full Names — Guest 1 <span class="req">*</span></label>
+              <input type="text" name="Guest1FullName" placeholder="First and last name" required>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Has Guest 1 visited Kishindo before? <span class="req">*</span></label>
+              <div class="options-grid" data-field="Guest1VisitedBefore" data-type="radio">
+                <div class="option-card"><input type="radio" name="Guest1VisitedBefore" value="No"><label class="option-card-label">No — this is our first visit</label></div>
+                <div class="option-card"><input type="radio" name="Guest1VisitedBefore" value="Yes"><label class="option-card-label">Yes — returning guest</label></div>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Year of previous visit (if applicable)</label>
+              <input type="text" name="Guest1VisitYear" placeholder="e.g. 2024">
+            </div>
+            <hr style="border:none;border-top:1px solid var(--border-light);margin:24px 0;">
+            <div class="field-group">
+              <label class="field-label">Full Names — Guest 2 <span style="font-weight:400;color:var(--charcoal-muted);">(if sharing suite)</span></label>
+              <input type="text" name="Guest2FullName" placeholder="First and last name">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Has Guest 2 visited Kishindo before?</label>
+              <div class="options-grid" data-field="Guest2VisitedBefore" data-type="radio">
+                <div class="option-card"><input type="radio" name="Guest2VisitedBefore" value="No"><label class="option-card-label">No — first visit</label></div>
+                <div class="option-card"><input type="radio" name="Guest2VisitedBefore" value="Yes"><label class="option-card-label">Yes — returning guest</label></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Section 4: Dates of Birth ── -->
+          <div id="sec-dob" class="step-container">
+            <div class="step-header">
+              <div class="step-number">Section 4 of 17</div>
+              <h2 class="step-title">Guest Birth Dates</h2>
+              <p class="step-lead">Required for lodge medical register and reserve permit requirements.</p>
+            </div>
+            <div class="field-row-2">
+              <div class="field-group">
+                <label class="field-label">Date of Birth — Guest 1</label>
+                <input type="date" name="Guest1DOB">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Date of Birth — Guest 2</label>
+                <input type="date" name="Guest2DOB">
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Section 5: Nationalities ── -->
+          <div id="sec-nationality" class="step-container">
+            <div class="step-header">
+              <div class="step-number">Section 5 of 17</div>
+              <h2 class="step-title">Guest Nationalities</h2>
+              <p class="step-lead">Required for South African hospitality and tourism registry.</p>
+            </div>
+            <div class="field-row-2">
+              <div class="field-group">
+                <label class="field-label">Nationality — Guest 1</label>
+                <input type="text" name="Guest1Nationality" placeholder="e.g. British, South African, German">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Nationality — Guest 2</label>
+                <input type="text" name="Guest2Nationality" placeholder="e.g. British, South African, American">
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Section 6: Bedding / Room Configuration ── -->
+          <div id="sec-room" class="step-container">
+            <div class="step-header">
+              <div class="step-number">Section 6 of 17</div>
+              <h2 class="step-title">Bed Configuration</h2>
+              <p class="step-lead">How would you like your suite bedding arranged for your arrival?</p>
+            </div>
+            <div class="field-group">
+              <div class="options-grid" data-field="RoomConfiguration" data-type="radio">
+                <div class="option-card selected"><input type="radio" name="RoomConfiguration" value="King Bed" checked><label class="option-card-label">Generous King Bed</label></div>
+                <div class="option-card"><input type="radio" name="RoomConfiguration" value="Twin Beds"><label class="option-card-label">Two Separate Twin Beds</label></div>
+                <div class="option-card"><input type="radio" name="RoomConfiguration" value="Day Visitors"><label class="option-card-label">Day Visitors</label></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Section 7: Dietary Preferences Gate ── -->
+          <div id="sec-diet-gate" class="step-container">
+            <div class="step-header">
+              <div class="step-number">Section 7 of 17</div>
+              <h2 class="step-title">Dining & Bush Hospitality</h2>
+              <p class="step-lead">All fine dining meals are curated and prepared fresh in our remote reserve. Do you or your fellow guest have any dietary requirements or preferences?</p>
+            </div>
+            <div class="field-group">
+              <div class="options-grid" data-field="HasDietaryPreferences" data-type="radio">
+                <div class="option-card"><input type="radio" name="HasDietaryPreferences" value="Yes"><label class="option-card-label">Yes — we have dietary requirements or allergies</label></div>
+                <div class="option-card selected"><input type="radio" name="HasDietaryPreferences" value="No" checked><label class="option-card-label">No — no dietary restrictions or allergies</label></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Section 8: Dietary Details (Conditional) ── -->
+          <div id="sec-diet-detail" class="step-container">
+            <div class="step-header">
+              <div class="step-number">Section 8 of 17</div>
+              <h2 class="step-title">Dietary Requirements</h2>
+              <p class="step-lead">Please specify details for our chef so every meal and bush snack is tailored to your needs.</p>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Special Dietary Requirements — Guest 1 <span class="req">*</span></label>
+              <textarea name="Guest1DietaryRequirements" placeholder="e.g. Strictly vegetarian, no shellfish, gluten-free, no pork…"></textarea>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Special Dietary Requirements — Guest 2</label>
+              <textarea name="Guest2DietaryRequirements" placeholder="e.g. Nut allergy, lactose intolerant…"></textarea>
+            </div>
+          </div>
+
+          <!-- ── Section 9: Medical Conditions Gate ── -->
+          <div id="sec-med-gate" class="step-container">
+            <div class="step-header">
+              <div class="step-number">Section 9 of 17</div>
+              <h2 class="step-title">Medical Care & Peace of Mind</h2>
+              <p class="step-lead">Kishindo is situated in a malaria-free area. Do you have any medical conditions or mobility considerations we should prepare for?</p>
+            </div>
+            <div class="field-group">
+              <div class="options-grid" data-field="HasMedicalConditions" data-type="radio">
+                <div class="option-card"><input type="radio" name="HasMedicalConditions" value="Yes"><label class="option-card-label">Yes — there are medical conditions to note</label></div>
+                <div class="option-card selected"><input type="radio" name="HasMedicalConditions" value="No" checked><label class="option-card-label">No medical conditions</label></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Section 10: Medical Details (Conditional) ── -->
+          <div id="sec-med-detail" class="step-container">
+            <div class="step-header">
+              <div class="step-number">Section 10 of 17</div>
+              <h2 class="step-title">Medical Conditions & Allergies</h2>
+              <p class="step-lead">This information is treated with strict confidentiality by our management team.</p>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Medical Conditions / Allergies — Guest 1 <span class="req">*</span></label>
+              <textarea name="Guest1MedicalConditions" placeholder="Please describe any medical conditions, asthma, severe bee sting allergies, or mobility requirements…"></textarea>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Medical Conditions / Allergies — Guest 2</label>
+              <textarea name="Guest2MedicalConditions" placeholder="Please describe any conditions…"></textarea>
+            </div>
+          </div>
+
+          <!-- ── Section 11: Reason for Stay & Wildlife Interests ── -->
+          <div id="sec-interests" class="step-container">
+            <div class="step-header">
+              <div class="step-number">Section 11 of 17</div>
+              <h2 class="step-title">Your Kishindo Safari Experience</h2>
+              <p class="step-lead">What draws you to Kishindo? Select all that apply — our guiding team will tailor vehicle positioning and sightings to your interests.</p>
+            </div>
+            <div class="field-group">
+              <div class="options-grid" data-field="ReasonsForStay" data-type="checkbox">
+                <div class="option-card"><input type="checkbox" value="Tiger photography"><label class="option-card-label">Tiger photography</label></div>
+                <div class="option-card"><input type="checkbox" value="Cheetah photography"><label class="option-card-label">Cheetah photography (Cheetah Metapopulation Project)</label></div>
+                <div class="option-card"><input type="checkbox" value="General wildlife photography"><label class="option-card-label">General wildlife photography (antelope, birdlife, Karoo landscapes)</label></div>
+                <div class="option-card"><input type="checkbox" value="Bird photography"><label class="option-card-label">Bird photography (Blue Cranes & Karoo raptors)</label></div>
+                <div class="option-card"><input type="checkbox" value="Professional photography or filming"><label class="option-card-label">Professional photography or commercial filming</label></div>
+                <div class="option-card"><input type="checkbox" value="Learning about tiger and cheetah behaviour"><label class="option-card-label">Learning about tiger and cheetah behaviour</label></div>
+                <div class="option-card"><input type="checkbox" value="Conservation and wildlife education"><label class="option-card-label">Conservation and wildlife education</label></div>
+                <div class="option-card"><input type="checkbox" value="A unique wildlife experience"><label class="option-card-label">A unique wildlife experience</label></div>
+                <div class="option-card"><input type="checkbox" value="A luxury lodge stay"><label class="option-card-label">A luxury lodge stay</label></div>
+                <div class="option-card"><input type="checkbox" value="A peaceful nature escape"><label class="option-card-label">A peaceful nature escape</label></div>
+                <div class="option-card"><input type="checkbox" value="A special occasion or celebration"><label class="option-card-label">A special occasion or celebration</label></div>
+                <div class="option-card"><input type="checkbox" value="Travelling with a photography group or tour leader"><label class="option-card-label">Travelling with a photography group or tour leader</label></div>
+                <div class="option-card"><input type="checkbox" value="Visiting as part of a wider South African holiday"><label class="option-card-label">Visiting as part of a wider South African holiday</label></div>
+                <div class="option-card"><input type="checkbox" value="Returning to Kishindo after a previous visit"><label class="option-card-label">Returning to Kishindo after a previous visit</label></div>
+              </div>
+            </div>
+            <div class="field-group" style="margin-top:16px;">
+              <label class="field-label">Other specific interests</label>
+              <input type="text" name="ReasonsForStayOther" placeholder="Tell our guiding team anything else…">
+            </div>
+          </div>
+
+          <!-- ── Section 12: Celebrations (Conditional) ── -->
+          <div id="sec-celebrations" class="step-container">
+            <div class="step-header">
+              <div class="step-number">Section 12 of 17</div>
+              <h2 class="step-title">Special Occasions & Celebrations</h2>
+              <p class="step-lead">Are you celebrating a honeymoon, birthday, or anniversary? Let us know so our team can toast with you under the African sky.</p>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Special Occasions During Your Stay <span class="req">*</span></label>
+              <textarea name="SpecialOccasions" placeholder="Please supply details, dates, and any special requests (e.g. champagne sundowner, private boma dinner)…"></textarea>
+            </div>
+          </div>
+
+          <!-- ── Section 13: Transport & Travel Logistics ── -->
+          <div id="sec-transport" class="step-container">
+            <div class="step-header">
+              <div class="step-number">Section 13 of 17</div>
+              <h2 class="step-title">Transport & Arrival Details</h2>
+              <p class="step-lead">Kishindo is situated in the Free State near Philippolis (approx. 1½ hours from Bloemfontein).</p>
+            </div>
+            <div class="field-group">
+              <label class="field-label">How Will You Be Travelling to The Lodge? <span class="req">*</span></label>
+              <div class="options-grid" data-field="TransportMethod" data-type="checkbox">
+                <div class="option-card"><input type="checkbox" value="Private Road Shuttle from Bloemfontein"><label class="option-card-label">Private Road Shuttle from Bloemfontein (approx. 3 hours)</label></div>
+                <div class="option-card"><input type="checkbox" value="Private Charter Plane arriving in Gariep"><label class="option-card-label">Private Charter Plane arriving at Gariep Dam Airfield (2 hours transfer)</label></div>
+                <div class="option-card"><input type="checkbox" value="Private Helicopter arriving in Gariep"><label class="option-card-label">Private Helicopter arriving in Gariep</label></div>
+                <div class="option-card"><input type="checkbox" value="Kishindo Road Shuttle from Gariep"><label class="option-card-label">Kishindo Road Shuttle from Gariep (45 minutes)</label></div>
+                <div class="option-card"><input type="checkbox" value="Helicopter Transfer from Bloemfontein"><label class="option-card-label">Helicopter Transfer from Bloemfontein</label></div>
+                <div class="option-card"><input type="checkbox" value="Self-driving"><label class="option-card-label">Self-driving</label></div>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">If self-driving, city/town of departure</label>
+              <input type="text" name="SelfDriveDeparture" placeholder="e.g. Bloemfontein, Cape Town, Johannesburg">
+            </div>
+            <div class="field-row-2">
+              <div class="field-group">
+                <label class="field-label">Flight Into Bloemfontein</label>
+                <input type="text" name="FlightInDetails" placeholder="e.g. Airlink 4Z 703 arriving 10h20">
+                <p class="field-helper">Recommended: Airlink 4Z 703, arriving 10h20</p>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Flight Out of Bloemfontein</label>
+                <input type="text" name="FlightOutDetails" placeholder="e.g. Airlink 4Z 712 departing 14h20">
+                <p class="field-helper">Recommended: Airlink 4Z 712, departing 14h20</p>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Approximate Check-in Time <span class="req">*</span></label>
+              <div class="options-grid" data-field="CheckInTime" data-type="radio">
+                <div class="option-card selected"><input type="radio" name="CheckInTime" value="14h00" checked><label class="option-card-label">14h00 (Prompt 14:00 check-in required)</label></div>
+                <div class="option-card"><input type="radio" name="CheckInTime" value="15h00"><label class="option-card-label">15h00</label></div>
+                <div class="option-card"><input type="radio" name="CheckInTime" value="16h00"><label class="option-card-label">16h00</label></div>
+              </div>
+              <p class="field-helper" style="color:var(--brand-ochre);">Reserve gate closes at sunset (Winter 18h00, Summer 19h00). Arrivals after dark are not permitted for safety.</p>
+            </div>
+          </div>
+
+          <!-- ── Section 14: Contact Numbers ── -->
+          <div id="sec-contacts" class="step-container">
+            <div class="step-header">
+              <div class="step-number">Section 14 of 17</div>
+              <h2 class="step-title">Guest Contact Numbers</h2>
+              <p class="step-lead">Please provide contact details for our team to coordinate road meeting points and gate entry.</p>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Guest Mobile / WhatsApp Numbers <span class="req">*</span></label>
+              <textarea name="GuestContactNumbers" placeholder="Include country code, e.g. +44 7700 900451 or +27 82 123 4567" required></textarea>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Emergency Contact Person</label>
+              <textarea name="EmergencyContactDetails" placeholder="Name, relationship, and contact telephone number"></textarea>
+            </div>
+          </div>
+
+          <!-- ── Section 15: Insurance ── -->
+          <div id="sec-insurance" class="step-container">
+            <div class="step-header">
+              <div class="step-number">Section 15 of 17</div>
+              <h2 class="step-title">Travel Insurance Details</h2>
+              <p class="step-lead">Comprehensive travel and medical insurance is required for all guests travelling in remote reserves.</p>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Insurance Provider & Policy Number</label>
+              <textarea name="InsuranceDetails" placeholder="e.g. Allianz Global Medical #AG-991204, 24h Assistance: +44 20 8603 9999"></textarea>
+            </div>
+          </div>
+
+          <!-- ── Section 16: Final Notes ── -->
+          <div id="sec-final" class="step-container">
+            <div class="step-header">
+              <div class="step-number">Section 16 of 17</div>
+              <h2 class="step-title">Finally</h2>
+              <p class="step-lead">Is there any additional information or personal preferences that will help us personalise your visit?</p>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Additional Requests or Notes</label>
+              <textarea name="AdditionalInformation" placeholder="e.g. Photography beanbag requests, drone permits, specific wine preferences, twin bed setup…"></textarea>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Where did you hear about Kishindo Conservation Reserve?</label>
+              <textarea name="HowDidYouHear" placeholder="e.g. Recommended by friend, travel agent, social media, conservation documentary…"></textarea>
+            </div>
+          </div>
+
+          <!-- Form Navigation Bar -->
+          <div class="form-nav-bar">
+            <button id="formPrevBtn" class="btn btn-outline" onclick="window.KishindoApp.prevFormStep()">← Back</button>
+            <button id="formNextBtn" class="btn btn-ochre" onclick="window.KishindoApp.nextFormStep()">Continue →</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 4: COMPLETION & SECTION 17 IMPORTANT INFORMATION
+       ══════════════════════════════════════════════════════════════ -->
+  <main id="guestCompleteScreen" class="screen">
+    <div class="content-wrap" style="max-width: 780px;">
+      
+      <!-- Thank You Card -->
+      <div class="card-white" style="text-align:center; padding: 40px 32px; border-top: 4px solid var(--brand-ochre);">
+        <h2 style="font-family: var(--font-serif); font-size: 38px; font-weight: 400; color: var(--charcoal-black); text-transform:none; margin-bottom: 8px;">
+          Your Stay is Being Curated
+        </h2>
+        <p class="editorial-italic" style="font-size: 17px; color: var(--charcoal-muted); max-width: 580px; margin: 0 auto 20px;">
+          Thank you for sharing your preferences with us. Our team has received your information and is preparing your wilderness sanctuary.
+        </p>
+        <div class="no-print" style="display:flex; justify-content:center; gap:12px; margin-top:20px;">
+          <button class="btn btn-primary" onclick="window.KishindoApp.printDocument()">🖨 Print / Save as PDF</button>
+          <button class="btn btn-outline" onclick="window.KishindoApp.startGuestForm()">✏ Edit My Answers</button>
+        </div>
+      </div>
+
+      <!-- ── Section 17: Critical Important Information (from Google Form p. 17 & Rate Card p. 8) ── -->
+      <div class="banner-card" style="margin-top: 32px;">Section 17 — Important Arrival & Access Information</div>
+      <div class="card-white has-banner">
+        <div class="card-body">
+          
+          <!-- Philippolis Warning Callout -->
+          <div class="philippolis-alert-box">
+            <div class="alert-tag">⚠ Critical Safety Instruction</div>
+            <div class="alert-message">
+              <strong>To Note Before You Leave Philippolis:</strong><br>
+              Before you leave Philippolis to head to Kishindo / Tiger Canyon, please call the <strong>Canyon Lodge Manager on +27 66 290 8424</strong>. 
+              The reason for this is along the way you will lose cell reception. She will arrange someone to meet you at the main gate.
+            </div>
+          </div>
+
+          <!-- Check-in / Out Times -->
+          <div class="card-white" style="background:var(--sand-box); border:none; padding: 18px 24px; margin-bottom: 24px;">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--charcoal-black); margin-bottom: 8px;">
+              Check-in and Check-out Times
+            </div>
+            <p style="font-size: 14px; margin-bottom: 4px;">• Check-in time: <strong>Strictly 14h00</strong></p>
+            <p style="font-size: 14px; margin-bottom: 4px;">• Check-out time: <strong>Strictly 10h00</strong></p>
+            <p style="font-size: 13px; color: var(--charcoal-muted); margin-top: 6px;">
+              Due to the remote wilderness logistics and game drive schedules, early check-ins and late check-outs cannot be accommodated.
+            </p>
+          </div>
+
+          <!-- Driving Routes Table -->
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--charcoal-black); margin-bottom: 12px;">
+            Driving Directions
+          </div>
+          <table class="route-table">
+            <thead>
+              <tr>
+                <th>Route</th>
+                <th>Distance & Directions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1) From Bloemfontein</strong></td>
+                <td>120 km on the N1 — take R717 at Trompsburg, 60 km to Philippolis. Once in Philippolis, follow the reserve signposts.</td>
+              </tr>
+              <tr>
+                <td><strong>2) From Cape Town</strong></td>
+                <td>Take R717 at Colesberg — 60 km to Philippolis. Once in Philippolis, follow the reserve signposts.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top: 18px;">
+            <a href="https://goo.gl/maps/nPeZzKLW8ghHLL3e7" target="_blank" class="btn btn-outline btn-sm">
+              📍 Open Google Maps Pin (Kishindo / Tiger Canyon) →
+            </a>
+          </div>
+
+          <!-- Direct Lodge Emergency Contacts -->
+          <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--border-light); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 13px;">
+            <div><strong>Canyon Lodge WhatsApp / Phone:</strong> <a href="tel:+27662908424">+27 66 290 8424</a></div>
+            <div><strong>Reservations:</strong> <a href="mailto:reservations@kishindowild.com">reservations@kishindowild.com</a></div>
+            <div><strong>Website:</strong> <a href="https://www.kishindowild.com" target="_blank">kishindowild.com</a></div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 5: LODGE OPERATIONS DASHBOARD (Staff Anchor View)
+       ══════════════════════════════════════════════════════════════ -->
+  <main id="staffDashboardScreen" class="screen">
+    <div class="content-wrap" style="max-width: 960px;">
+      
+      <!-- Top Overview Bar -->
+      <div id="staffDashboardMain">
+        <div class="dashboard-controls">
+          <div>
+            <h1 style="font-size: 22px; letter-spacing: 0.14em;">Kishindo Lodge Operations</h1>
+            <p style="font-size: 12px; color: var(--charcoal-muted);">Real-time guest pre-arrival registry, rooming lists, and email dispatcher</p>
+          </div>
+          <div class="dashboard-actions-group">
+            <button class="btn btn-ochre btn-sm" onclick="window.KishindoApp.openNewBookingModal()">+ New Booking</button>
+            <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.downloadCSV()">⬇ Export CSV</button>
+            <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.downloadJSON()">⬇ Export Backup</button>
+          </div>
+        </div>
+
+        <!-- Bookings List -->
+        <div id="staffBookingsList"></div>
+      </div>
+
+      <!-- Single Booking Detail View (When Clicked) -->
+      <div id="staffBookingDetail" style="display:none;">
+        <button class="btn btn-outline btn-sm" style="margin-bottom: 20px;" onclick="window.KishindoApp.closeBookingDetail()">← Back to All Bookings</button>
+        
+        <div class="card-white" style="margin-bottom: 24px;">
+          <div class="banner-card" style="display:flex; justify-content:space-between; align-items:center;">
+            <span id="detailNbidTitle">Booking NBID</span>
+            <button class="btn btn-primary btn-sm no-print" onclick="window.KishindoApp.printDocument()">🖨 Print This PDF</button>
+          </div>
+          <div class="card-body">
+            <p id="detailStayInfo" style="font-size:14px; color:var(--charcoal-muted); margin-bottom: 24px;"></p>
+
+            <!-- 1-Click Operations Summary Copy Box -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+              <span style="font-size:11px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;">Operations Copy & Paste (Exact Format)</span>
+              <button class="btn btn-ochre btn-sm" onclick="window.KishindoApp.copyOpsSummary()">📋 Copy Summary</button>
+            </div>
+            <pre id="opsSummaryOutput" class="ops-summary-pre"></pre>
+
+            <!-- 1-Click Outlook Email Template Box -->
+            <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-light);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; flex-wrap:wrap; gap:8px;">
+                <span style="font-size:11px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;">Outlook Email Dispatcher</span>
+                <div style="display:flex; gap:8px;">
+                  <button class="btn btn-outline btn-sm email-tab-btn active" data-type="pre" onclick="window.KishindoApp.switchEmailTab('pre')">Pre-Deposit</button>
+                  <button class="btn btn-outline btn-sm email-tab-btn" data-type="post" onclick="window.KishindoApp.switchEmailTab('post')">Deposit-Received</button>
+                  <button class="btn btn-primary btn-sm" onclick="window.KishindoApp.copyEmailPreview()">✉ Copy Email</button>
+                </div>
+              </div>
+              <pre id="emailPreviewOutput" class="ops-summary-pre" style="background:#FFFFFF; border-color:var(--brand-ochre);"></pre>
+            </div>
+
+            <!-- Detailed Rooming Breakout -->
+            <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-light);">
+              <h3 style="font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 16px;">Assigned Suites & Guest Profiles</h3>
+              <div id="roomingDetailsContainer"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       MODAL: CREATE NEW BOOKING
+       ══════════════════════════════════════════════════════════════ -->
+  <div id="newBookingModal" class="modal-overlay">
+    <div class="modal-window">
+      <div class="modal-header">
+        <span style="font-size:12px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;">Create Reservation</span>
+        <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.closeNewBookingModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        
+        <div class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">NBID Number (NightsBridge) <span class="req">*</span></label>
+            <input type="text" id="nb_nbid" placeholder="e.g. 116057573" required>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Booking Type</label>
+            <select id="nb_type">
+              <option value="Agent">Agent / DMC / Tour Operator</option>
+              <option value="Direct">Direct Guest</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">Contact / Lead Name <span class="req">*</span></label>
+            <input type="text" id="nb_contact" placeholder="e.g. Tears Travel or Emily Carter" required>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Contact Email</label>
+            <input type="email" id="nb_email" placeholder="contact@example.com">
+          </div>
+        </div>
+
+        <div class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">Check-in Date <span class="req">*</span></label>
+            <input type="date" id="nb_checkin" required>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Check-out Date <span class="req">*</span></label>
+            <input type="date" id="nb_checkout" required>
+          </div>
+        </div>
+
+        <div class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">Guest Count (Pax)</label>
+            <input type="number" id="nb_guests" value="2" min="1" max="6">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Rate Category</label>
+            <select id="nb_rate">
+              <option value="Rack Rate">Rack Rate (Rates Card)</option>
+              <option value="SADC 10%">SADC 10%</option>
+              <option value="Trade Rate">Trade Rate</option>
+              <option value="Special Offer">Special Offer</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Suite Allocations -->
+        <div style="margin: 20px 0 12px; padding-top: 16px; border-top: 1px solid var(--border-light); font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brand-ochre);">
+          Suite Allocations (Auto-Generates Suite PINs)
+        </div>
+
+        <div class="field-row-2" style="margin-bottom: 10px;">
+          <div>
+            <label class="field-label">Room 1</label>
+            <select id="nb_suite_1">
+              <option value="Tibo">Tibo (Suite 1)</option>
+              <option value="Ussuri">Ussuri (Suite 2)</option>
+              <option value="Zaria">Zaria (Suite 3)</option>
+              <option value="">— None —</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">Bed Setup</label>
+            <select id="nb_bed_1">
+              <option value="King Bed">King Bed</option>
+              <option value="Twin Beds">Twin Beds</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row-2" style="margin-bottom: 10px;">
+          <div>
+            <label class="field-label">Room 2</label>
+            <select id="nb_suite_2">
+              <option value="">— None —</option>
+              <option value="Tibo">Tibo (Suite 1)</option>
+              <option value="Ussuri" selected>Ussuri (Suite 2)</option>
+              <option value="Zaria">Zaria (Suite 3)</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">Bed Setup</label>
+            <select id="nb_bed_2">
+              <option value="King Bed">King Bed</option>
+              <option value="Twin Beds">Twin Beds</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row-2" style="margin-bottom: 16px;">
+          <div>
+            <label class="field-label">Room 3</label>
+            <select id="nb_suite_3">
+              <option value="">— None —</option>
+              <option value="Tibo">Tibo (Suite 1)</option>
+              <option value="Ussuri">Ussuri (Suite 2)</option>
+              <option value="Zaria">Zaria (Suite 3)</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">Bed Setup</label>
+            <select id="nb_bed_3">
+              <option value="King Bed">King Bed</option>
+              <option value="Twin Beds">Twin Beds</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Extras / Levies</label>
+          <input type="text" id="nb_extras" value="Conservation levies" placeholder="e.g. Conservation levies, Private Photographic Vehicle">
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
+          <button class="btn btn-outline" onclick="window.KishindoApp.closeNewBookingModal()">Cancel</button>
+          <button class="btn btn-ochre" onclick="window.KishindoApp.submitNewBooking()">Create Reservation</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
