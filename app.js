@@ -528,7 +528,7 @@
     document.getElementById('opsSummaryOutput').textContent = summaryText;
 
     // Render Email text
-    updateEmailPreview(booking, 'pre');
+    updateEmailPreview(booking, 'provisional');
 
     // Render Detailed Rooming Cards
     renderRoomingDetailCards(booking, responses);
@@ -546,26 +546,23 @@
     const medNotes = [];
 
     responses.forEach(r => {
-      if (r.Guest1FullName) {
-        guests.push(r.Guest1FullName);
-        if (r.Guest1Nationality) nats.push(r.Guest1Nationality);
-        if (r.Guest1DietaryRequirements && r.HasDietaryPreferences === 'Yes') {
-          dietNotes.push(`${r.Guest1FullName} - ${r.Guest1DietaryRequirements}`);
+      [1, 2, 3, 4].forEach(i => {
+        const name = r[`Guest${i}FullName`];
+        const nat = r[`Guest${i}Nationality`];
+        const diet = r[`Guest${i}DietaryRequirements`];
+        const med = r[`Guest${i}MedicalConditions`];
+
+        if (name) {
+          guests.push(name);
+          if (nat) nats.push(nat);
+          if (diet && r.HasDietaryPreferences === 'Yes') {
+            dietNotes.push(`${name} - ${diet}`);
+          }
+          if (med && r.HasMedicalConditions === 'Yes') {
+            medNotes.push(`${name} - ${med}`);
+          }
         }
-        if (r.Guest1MedicalConditions && r.HasMedicalConditions === 'Yes') {
-          medNotes.push(`${r.Guest1FullName} - ${r.Guest1MedicalConditions}`);
-        }
-      }
-      if (r.Guest2FullName) {
-        guests.push(r.Guest2FullName);
-        if (r.Guest2Nationality) nats.push(r.Guest2Nationality);
-        if (r.Guest2DietaryRequirements && r.HasDietaryPreferences === 'Yes') {
-          dietNotes.push(`${r.Guest2FullName} - ${r.Guest2DietaryRequirements}`);
-        }
-        if (r.Guest2MedicalConditions && r.HasMedicalConditions === 'Yes') {
-          medNotes.push(`${r.Guest2FullName} - ${r.Guest2MedicalConditions}`);
-        }
-      }
+      });
     });
 
     const uniqueNats = [...new Set(nats)].join(' / ');
@@ -583,7 +580,7 @@
 
     (booking.suites || []).forEach(s => {
       const resp = responses.find(r => r.suite === s.name);
-      const names = [resp?.Guest1FullName, resp?.Guest2FullName].filter(Boolean).join(' & ') || 'TBC';
+      const names = [1, 2, 3, 4].map(i => resp?.[`Guest${i}FullName`]).filter(Boolean).join(' & ') || 'TBC';
       lines.push(`  ${s.name}: ${names}`);
     });
 
@@ -610,66 +607,94 @@
     return lines.join('\n');
   }
 
-  function updateEmailPreview(booking, type) {
+  function updateEmailPreview(booking, stage) {
     const isAgent = booking.bookingType === 'Agent';
-    const isPre = type === 'pre';
     const hostUrl = window.location.origin + window.location.pathname;
 
-    let greeting = isAgent
-      ? `Dear ${booking.contactName},\n\nThank you for your enquiry. I am pleased to confirm the following provisional booking:`
-      : `Dear ${booking.contactName},\n\nThank you for choosing Kishindo Conservation Reserve. We are delighted to confirm your ${isPre ? 'provisional ' : ''}booking:`;
+    let greeting = '';
+    let statusTitle = '';
+    let paymentSchedule = '';
 
     const suitePins = (booking.suites || []).map(s => `  ${s.name} — PIN:  ${s.pin}`).join('\n');
+    const roomsList = (booking.suites || []).map(s => s.name).join(', ');
+    const bedConfigs = (booking.suites || []).map(s => `${s.name} (${s.bedConfig})`).join(', ');
+
+    if (stage === 'provisional' || stage === 'pre') {
+      greeting = isAgent
+        ? `Dear ${booking.contactName},\n\nThank you for your enquiry. We currently have availability for the requested dates and I have placed the following provisional reservation on hold for your guests:`
+        : `Dear ${booking.contactName},\n\nThank you for choosing Kishindo Conservation Reserve. We are delighted to confirm that your provisional wilderness reservation is on hold as per the following details:`;
+      statusTitle = 'PROVISIONAL RESERVATION DETAILS (AWAITING DEPOSIT)';
+      paymentSchedule = `PAYMENT SCHEDULE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Deposit (50%) Due:  ${formatDate(booking.depositDue)}  (due within 14 days of booking, 21 days at most)
+  Final Balance Due:  ${formatDate(booking.balanceDue)}  (due 45 days prior to arrival)
+
+Please refer to the attached proforma invoice for full pricing and payment instructions.
+This reservation will remain provisional until the deposit has been received.`;
+    } else if (stage === 'confirmed' || stage === 'post') {
+      greeting = isAgent
+        ? `Dear ${booking.contactName},\n\nThank you — we have safely received the deposit. I am delighted to confirm that the reservation for your guests at Kishindo Conservation Reserve is now fully confirmed:`
+        : `Dear ${booking.contactName},\n\nThank you — we have safely received your deposit. Your stay at Kishindo Conservation Reserve is now officially confirmed:`;
+      statusTitle = 'CONFIRMED RESERVATION DETAILS (DEPOSIT RECEIVED)';
+      paymentSchedule = `BALANCE SCHEDULE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Deposit Status:     RECEIVED & CONFIRMED
+  Final Balance Due:  ${formatDate(booking.balanceDue)}  (due 45 days prior to arrival)
+
+Please refer to your proforma invoice for settlement balance and payment details.`;
+    } else { // 'ready' -> Sanctuary Ready
+      greeting = isAgent
+        ? `Dear ${booking.contactName},\n\nWe are delighted to confirm that full balance payment has cleared. All arrangements are in place and we are Sanctuary Ready to welcome your guests to the wild:`
+        : `Dear ${booking.contactName},\n\nWe are delighted to confirm that full settlement has cleared. Your suite and private wilderness experiences have been curated with utmost care, and we are Sanctuary Ready for your arrival:`;
+      statusTitle = 'SANCTUARY READY — ALL SETTLEMENTS CLEARED';
+      paymentSchedule = `SETTLEMENT STATUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Account Status:     FULLY CLEARED & SANCTUARY READY
+  Arrival Date:       ${formatDate(booking.checkIn)} (strictly 14h00)`;
+    }
 
     const emailBody = `${greeting}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${isPre ? 'PROVISIONAL BOOKING DETAILS' : 'CONFIRMED BOOKING DETAILS'}
+${statusTitle}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   NBID:               ${booking.nbid}
   Arrival date:       ${formatDate(booking.checkIn)}
   Departure date:     ${formatDate(booking.checkOut)}
   Nights:             ${booking.nights}
   Guests:             ${booking.guestCount} Adults
-  Rooms:              ${(booking.suites || []).map(s => s.name).join(', ')}
-  Bed configuration:  ${(booking.suites || []).map(s => s.name + ' (' + s.bedConfig + ')').join(', ')}
+  Rooms:              ${roomsList}
+  Bed configuration:  ${bedConfigs}
   Extras:             ${booking.extras || 'Conservation levies'}
-  Rate:               ${booking.rate || 'Rack Rate'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PAYMENT SCHEDULE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Deposit (50%) due:  ${formatDate(booking.depositDue)}
-  Balance due:        ${formatDate(booking.balanceDue)}
-
-Please see the link to your invoice and payment:
-[Insert NightsBridge Payment Link Here]
+${paymentSchedule}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 GUEST PRE-ARRIVAL PORTAL
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-To ensure we curate every detail of your stay seamlessly ahead of arrival, kindly have ${isAgent ? 'your guests' : ''} complete the pre-arrival information form:
+To ensure our chefs, private guides, and trackers have every comfort tailored for ${isAgent ? 'your guests' : 'your arrival'} ahead of time, kindly complete the pre-arrival information form:
 
-  Portal Link: ${hostUrl}
+  Guest Portal: ${hostUrl}
 
 ${suitePins}
 
-Each PIN is private to the suite. Simply visit the link, enter the PIN, and the form will open.
+Each PIN is private to the suite. The form takes only a few minutes and may be amended at any time prior to arrival.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ARRIVAL NOTICE — BEFORE LEAVING PHILIPPOLIS
+CRITICAL ARRIVAL NOTICE — BEFORE LEAVING PHILIPPOLIS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ! IMPORTANT: Please call the Canyon Lodge Manager at Kishindo on +27 66 290 8424 before leaving Philippolis. You will lose cell reception along the way, and our team will arrange to meet you at the main gate.
 
 Check-in: strictly 14h00
 Check-out: strictly 10h00
 
-Warm regards,
+Warmest safari wishes,
 
 Carryn
 Reservations | Kishindo Conservation Reserve
 reservations@kishindowild.com | +27 66 290 8424
-www.kishindowild.com`;
+https://kishindowild.com/`;
 
     document.getElementById('emailPreviewOutput').textContent = emailBody;
   }
@@ -699,35 +724,114 @@ www.kishindowild.com`;
     }).join('');
   }
 
-  // ── 9. Export & Download Utilities ──
+  // ── 9. Export & Download Utilities (Row Per Individual Guest) ──
   async function downloadCSV() {
     const bookings = await DataStore.getBookings();
     const rows = [
-      ['NBID', 'Type', 'Contact', 'Email', 'CheckIn', 'CheckOut', 'Nights', 'Guests', 'Rate', 'Suite', 'PIN', 'BedConfig', 'Status', 'Guest1', 'Guest2', 'Dietary', 'Medical']
+      [
+        'NBID',
+        'Booking_Stage',
+        'Booking_Type',
+        'Lead_Contact_Name',
+        'Contact_Email',
+        'Check_In_Date',
+        'Check_Out_Date',
+        'Nights',
+        'Suite_Name',
+        'Suite_PIN',
+        'Bed_Configuration',
+        'Guest_Number',
+        'Guest_Full_Name',
+        'Guest_DOB',
+        'Guest_Nationality',
+        'Visited_Before',
+        'Visit_Year',
+        'Dietary_Requirements',
+        'Medical_Conditions_Allergies',
+        'Reasons_For_Stay',
+        'Special_Occasions_Celebrations',
+        'Transport_Method',
+        'Self_Drive_Departure_City',
+        'Flight_In_Details',
+        'Flight_Out_Details',
+        'Check_In_Time',
+        'Guest_Contact_Numbers',
+        'Emergency_Contact',
+        'Travel_Insurance',
+        'Additional_Notes',
+        'How_Did_You_Hear',
+        'Form_Status'
+      ]
     ];
 
     for (const b of bookings) {
       for (const s of (b.suites || [])) {
-        const resp = await DataStore.getResponse(b.nbid, s.name);
-        rows.push([
-          b.nbid,
-          b.bookingType,
-          b.contactName,
-          b.contactEmail,
-          b.checkIn,
-          b.checkOut,
-          b.nights,
-          b.guestCount,
-          b.rate || '',
-          s.name,
-          s.pin,
-          s.bedConfig,
-          s.status,
-          resp?.Guest1FullName || '',
-          resp?.Guest2FullName || '',
-          resp?.Guest1DietaryRequirements || '',
-          resp?.Guest1MedicalConditions || ''
-        ]);
+        const resp = await DataStore.getResponse(b.nbid, s.name) || {};
+        
+        // Loop through each possible guest in the suite (up to 4)
+        let guestCountFound = 0;
+        for (let i = 1; i <= 4; i++) {
+          const gName = resp[`Guest${i}FullName`];
+          if (gName || (i === 1 && s.status === 'Complete')) {
+            guestCountFound++;
+            rows.push([
+              b.nbid,
+              b.stage || 'Provisional',
+              b.bookingType,
+              b.contactName,
+              b.contactEmail,
+              b.checkIn,
+              b.checkOut,
+              b.nights,
+              s.name,
+              s.pin,
+              s.bedConfig,
+              `Guest ${i}`,
+              gName || 'Pending Submission',
+              resp[`Guest${i}DOB`] || '',
+              resp[`Guest${i}Nationality`] || '',
+              resp[`Guest${i}VisitedBefore`] || '',
+              resp[`Guest${i}VisitYear`] || '',
+              resp.HasDietaryPreferences === 'Yes' ? (resp[`Guest${i}DietaryRequirements`] || 'None') : 'None declared',
+              resp.HasMedicalConditions === 'Yes' ? (resp[`Guest${i}MedicalConditions`] || 'None') : 'None declared',
+              Array.isArray(resp.ReasonsForStay) ? resp.ReasonsForStay.join('; ') : (resp.ReasonsForStay || ''),
+              resp.SpecialOccasions || '',
+              Array.isArray(resp.TransportMethod) ? resp.TransportMethod.join('; ') : (resp.TransportMethod || ''),
+              resp.SelfDriveDeparture || '',
+              resp.FlightInDetails || '',
+              resp.FlightOutDetails || '',
+              resp.CheckInTime || '',
+              resp.GuestContactNumbers || '',
+              resp.EmergencyContactDetails || '',
+              resp.InsuranceDetails || '',
+              resp.AdditionalInformation || '',
+              resp.HowDidYouHear || '',
+              resp.Status || s.status
+            ]);
+          }
+        }
+
+        // If no guest submitted yet, provide at least one suite placeholder row
+        if (guestCountFound === 0) {
+          rows.push([
+            b.nbid,
+            b.stage || 'Provisional',
+            b.bookingType,
+            b.contactName,
+            b.contactEmail,
+            b.checkIn,
+            b.checkOut,
+            b.nights,
+            s.name,
+            s.pin,
+            s.bedConfig,
+            'Guest 1',
+            'Pending Submission',
+            '', '', '', '', 'None declared', 'None declared',
+            '', '', '', '', '', '', '', '', '', '', '', '',
+            s.status
+          ]);
+        }
       }
     }
 
@@ -856,6 +960,48 @@ www.kishindowild.com`;
     closeNewBookingModal() {
       document.getElementById('newBookingModal').classList.remove('active');
     },
+    toggleGuestBlock(guestNum, show) {
+      const block = document.getElementById(`guestBlock${guestNum}`);
+      if (block) block.style.display = show ? 'block' : 'none';
+
+      // Also toggle subfields in DOB, Nationality, Dietary, Medical
+      const dob = document.getElementById(`dobGroup${guestNum}`);
+      if (dob) dob.style.display = show ? 'block' : 'none';
+
+      const nat = document.getElementById(`natGroup${guestNum}`);
+      if (nat) nat.style.display = show ? 'block' : 'none';
+
+      const diet = document.getElementById(`dietGroup${guestNum}`);
+      if (diet) diet.style.display = show ? 'block' : 'none';
+
+      const med = document.getElementById(`medGroup${guestNum}`);
+      if (med) med.style.display = show ? 'block' : 'none';
+
+      // If hiding, also clear subfields of further guests
+      if (!show) {
+        for (let i = guestNum + 1; i <= 4; i++) {
+          this.toggleGuestBlock(i, false);
+          const r = document.querySelector(`input[name="HasGuest${i}"][value="No"]`);
+          if (r) {
+            r.checked = true;
+            r.closest('.option-card')?.classList.add('selected');
+            r.closest('.options-grid')?.querySelectorAll('.option-card')[0]?.classList.remove('selected');
+          }
+        }
+      }
+    },
+    handleSuiteSelectChange(idx) {
+      const suiteEl = document.getElementById(`nb_suite_${idx}`);
+      const bedEl = document.getElementById(`nb_bed_${idx}`);
+      if (!suiteEl || !bedEl) return;
+      if (!suiteEl.value) {
+        bedEl.value = '— None —';
+      } else {
+        if (bedEl.value === '— None —') {
+          bedEl.value = 'King Bed';
+        }
+      }
+    },
     async submitNewBooking() {
       const nbid = document.getElementById('nb_nbid').value.trim();
       const type = document.getElementById('nb_type').value;
@@ -864,7 +1010,7 @@ www.kishindowild.com`;
       const checkIn = document.getElementById('nb_checkin').value;
       const checkOut = document.getElementById('nb_checkout').value;
       const guests = parseInt(document.getElementById('nb_guests').value, 10) || 2;
-      const rate = document.getElementById('nb_rate').value;
+      const stage = document.getElementById('nb_stage').value;
       const extras = document.getElementById('nb_extras').value;
 
       if (!nbid || !contact || !checkIn || !checkOut) {
@@ -876,9 +1022,10 @@ www.kishindowild.com`;
       ['1', '2', '3'].forEach(i => {
         const sName = document.getElementById(`nb_suite_${i}`).value;
         const sBed = document.getElementById(`nb_bed_${i}`).value;
+        const customPin = document.getElementById(`nb_pin_${i}`) ? document.getElementById(`nb_pin_${i}`).value.trim() : '';
         if (sName) {
-          const pin = String(Math.floor(1000 + Math.random() * 9000));
-          suites.push({ name: sName, pin, bedConfig: sBed, status: 'Pending' });
+          const pin = customPin.length === 4 ? customPin : String(Math.floor(1000 + Math.random() * 9000));
+          suites.push({ name: sName, pin, bedConfig: sBed === '— None —' ? 'King Bed' : sBed, status: 'Pending' });
         }
       });
 
@@ -890,14 +1037,19 @@ www.kishindowild.com`;
       const ciDate = new Date(checkIn);
       const coDate = new Date(checkOut);
       const nights = Math.max(1, Math.round((coDate - ciDate) / (1000 * 60 * 60 * 24)));
+      
+      // Deposit due within 14 days of booking (21 days at most)
       const depDate = new Date();
-      depDate.setDate(depDate.getDate() + 21); // 21 days from booking date per Rate Card T&C
+      depDate.setDate(depDate.getDate() + 14);
+      
+      // Balance due 45 days before arrival
       const balDate = new Date(ciDate);
-      balDate.setDate(balDate.getDate() - 45); // 45 days before arrival per Rate Card T&C
+      balDate.setDate(balDate.getDate() - 45);
 
       const newBooking = {
         nbid,
         bookingType: type,
+        stage: stage || 'Provisional',
         contactName: contact,
         contactEmail: email,
         checkIn,
@@ -905,7 +1057,6 @@ www.kishindowild.com`;
         nights,
         guestCount: guests,
         suites,
-        rate,
         extras,
         depositDue: depDate.toISOString().split('T')[0],
         balanceDue: balDate.toISOString().split('T')[0],

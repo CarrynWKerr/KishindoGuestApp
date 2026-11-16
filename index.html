@@ -5,7 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>Kishindo Conservation Reserve — Pre-Arrival Guest Experience</title>
   
-  <!-- Favicon / Meta -->
+  <!-- Favicon / Brand App Icons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=2">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=2">
+  <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2">
+  <link rel="shortcut icon" type="image/x-icon" href="favicon.ico?v=2">
+  <link rel="manifest" href="site.webmanifest?v=2">
   <meta name="theme-color" content="#FAF9F6">
   <meta name="description" content="Kishindo Conservation Reserve — Pre-Arrival Concierge & Guest Experience">
 
@@ -25,23 +31,11 @@
   <header class="app-header">
     <div class="header-inner">
       <div class="brand-link" onclick="window.KishindoApp.logout()">
-        <!-- High-Resolution Kishindo Logo (Crane in flight + Ochre Sun Disc) -->
-        <svg class="logo-symbol" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Sunset Ochre Circle from Rate Card -->
-          <circle cx="56" cy="46" r="38" fill="#D37233" />
-          <!-- Blue Crane silhouette in flight -->
-          <path d="M18 68C22 62 28 54 36 49C30 45 22 41 12 39C16 43 23 48 30 52C26 55 21 60 18 68Z" fill="#141715" />
-          <path d="M36 49C44 44 54 41 68 40C61 43 54 48 48 53C56 50 66 48 78 48C70 52 61 57 54 62C62 59 71 58 82 58C73 63 63 68 53 73C44 77 34 78 26 76C32 72 38 66 42 60C38 61 34 63 29 65C34 60 38 55 36 49Z" fill="#141715" />
-          <circle cx="72" cy="34" r="2.5" fill="#141715" />
-          <path d="M73 34L85 32L74 36" stroke="#141715" stroke-width="1.5" stroke-linecap="round" />
-        </svg>
-        <div class="brand-text">
-          <span class="brand-title">Kishindo</span>
-          <span class="brand-subtitle">Conservation Reserve</span>
-        </div>
+        <!-- Official Kishindo Conservation Reserve Logo -->
+        <img src="kishindo-logo.png" alt="Kishindo Conservation Reserve" class="header-logo-img">
       </div>
       <div class="header-actions">
-        <a href="https://www.kishindowild.com" target="_blank" class="btn btn-outline btn-sm no-print">Website</a>
+        <a href="https://kishindowild.com/" target="_blank" class="btn btn-outline btn-sm no-print">Website</a>
       </div>
     </div>
   </header>
@@ -52,13 +46,7 @@
   <main id="authScreen" class="screen active">
     <div class="content-wrap" style="max-width: 540px;">
       <div class="auth-hero">
-        <svg class="logo-center" viewBox="0 0 100 100" fill="none">
-          <circle cx="56" cy="46" r="38" fill="#D37233" />
-          <path d="M18 68C22 62 28 54 36 49C30 45 22 41 12 39C16 43 23 48 30 52C26 55 21 60 18 68Z" fill="#141715" />
-          <path d="M36 49C44 44 54 41 68 40C61 43 54 48 48 53C56 50 66 48 78 48C70 52 61 57 54 62C62 59 71 58 82 58C73 63 63 68 53 73C44 77 34 78 26 76C32 72 38 66 42 60C38 61 34 63 29 65C34 60 38 55 36 49Z" fill="#141715" />
-          <circle cx="72" cy="34" r="2.5" fill="#141715" />
-          <path d="M73 34L85 32L74 36" stroke="#141715" stroke-width="1.5" stroke-linecap="round" />
-        </svg>
+        <img src="kishindo-logo.png" alt="Kishindo Conservation Reserve" class="auth-logo-img">
         <h1 class="auth-title">Welcome to Kishindo</h1>
         <p class="auth-subquote">
           “Where safari feels different in the best way. Guided by ethical, responsible tourism, every stay is an unforgettable journey through conservation, community, and wild open spaces.”
@@ -85,9 +73,6 @@
           </div>
           <div id="guestPinError" class="error-banner"></div>
           <button class="btn btn-ochre btn-full" onclick="window.KishindoApp.handleGuestLogin()">Unlock My Pre-Arrival Form</button>
-          <p style="font-size: 11px; color: var(--charcoal-muted); margin-top: 18px;">
-            Demo PIN for testing: <strong style="color:var(--brand-ochre);">4821</strong> (Suite Ussuri)
-          </p>
         </div>
       </div>
 
@@ -106,9 +91,6 @@
           </div>
           <div id="staffPinError" class="error-banner"></div>
           <button class="btn btn-primary btn-full" onclick="window.KishindoApp.handleStaffLogin()">Access Lodge Operations</button>
-          <p style="font-size: 11px; color: var(--charcoal-muted); margin-top: 18px;">
-            Default Staff PIN: <strong style="color:var(--brand-ochre);">1234</strong>
-          </p>
         </div>
       </div>
 
@@ -238,40 +220,121 @@
             </div>
           </div>
 
-          <!-- ── Section 3: Guest Names & Previous Visits ── -->
+          <!-- ── Section 3: Guest Names & Previous Visits (Progressive Add Up to 4) ── -->
           <div id="sec-names" class="step-container">
             <div class="step-header">
               <div class="step-number">Section 3 of 17</div>
               <h2 class="step-title">Guest Names</h2>
-              <p class="step-lead">Please list the guests sharing this suite (up to two guests per suite).</p>
+              <p class="step-lead">Please list all guests staying in this suite (maximum 4 guests per suite).</p>
             </div>
-            <div class="field-group">
-              <label class="field-label">Full Names — Guest 1 <span class="req">*</span></label>
-              <input type="text" name="Guest1FullName" placeholder="First and last name" required>
-            </div>
-            <div class="field-group">
-              <label class="field-label">Has Guest 1 visited Kishindo before? <span class="req">*</span></label>
-              <div class="options-grid" data-field="Guest1VisitedBefore" data-type="radio">
-                <div class="option-card"><input type="radio" name="Guest1VisitedBefore" value="No"><label class="option-card-label">No — this is our first visit</label></div>
-                <div class="option-card"><input type="radio" name="Guest1VisitedBefore" value="Yes"><label class="option-card-label">Yes — returning guest</label></div>
+
+            <!-- Guest 1 -->
+            <div class="guest-block" id="guestBlock1">
+              <h4 style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brand-ochre); margin-bottom: 12px;">Primary Guest (Guest 1)</h4>
+              <div class="field-group">
+                <label class="field-label">Full Name <span class="req">*</span></label>
+                <input type="text" name="Guest1FullName" placeholder="First and last name" required>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Has Guest 1 visited Kishindo before? <span class="req">*</span></label>
+                <div class="options-grid" data-field="Guest1VisitedBefore" data-type="radio">
+                  <div class="option-card"><input type="radio" name="Guest1VisitedBefore" value="No"><label class="option-card-label">No — first visit</label></div>
+                  <div class="option-card"><input type="radio" name="Guest1VisitedBefore" value="Yes"><label class="option-card-label">Yes — returning guest</label></div>
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Year of previous visit</label>
+                <input type="text" name="Guest1VisitYear" placeholder="e.g. 2024">
+              </div>
+
+              <!-- Question: Another guest? -->
+              <div class="field-group" style="margin-top: 24px; padding: 16px; background: var(--sand-light); border-radius: var(--radius-sm);">
+                <label class="field-label" style="margin-bottom: 8px;">Is there another guest sharing this suite?</label>
+                <div class="options-grid" data-field="HasGuest2" data-type="radio">
+                  <div class="option-card" onclick="window.KishindoApp.toggleGuestBlock(2, true)"><input type="radio" name="HasGuest2" value="Yes"><label class="option-card-label">Yes — Add Second Guest</label></div>
+                  <div class="option-card selected" onclick="window.KishindoApp.toggleGuestBlock(2, false)"><input type="radio" name="HasGuest2" value="No" checked><label class="option-card-label">No — Just 1 Guest</label></div>
+                </div>
               </div>
             </div>
-            <div class="field-group">
-              <label class="field-label">Year of previous visit (if applicable)</label>
-              <input type="text" name="Guest1VisitYear" placeholder="e.g. 2024">
-            </div>
-            <hr style="border:none;border-top:1px solid var(--border-light);margin:24px 0;">
-            <div class="field-group">
-              <label class="field-label">Full Names — Guest 2 <span style="font-weight:400;color:var(--charcoal-muted);">(if sharing suite)</span></label>
-              <input type="text" name="Guest2FullName" placeholder="First and last name">
-            </div>
-            <div class="field-group">
-              <label class="field-label">Has Guest 2 visited Kishindo before?</label>
-              <div class="options-grid" data-field="Guest2VisitedBefore" data-type="radio">
-                <div class="option-card"><input type="radio" name="Guest2VisitedBefore" value="No"><label class="option-card-label">No — first visit</label></div>
-                <div class="option-card"><input type="radio" name="Guest2VisitedBefore" value="Yes"><label class="option-card-label">Yes — returning guest</label></div>
+
+            <!-- Guest 2 -->
+            <div class="guest-block" id="guestBlock2" style="display: none; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border-light);">
+              <h4 style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brand-ochre); margin-bottom: 12px;">Second Guest (Guest 2)</h4>
+              <div class="field-group">
+                <label class="field-label">Full Name</label>
+                <input type="text" name="Guest2FullName" placeholder="First and last name">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Has Guest 2 visited Kishindo before?</label>
+                <div class="options-grid" data-field="Guest2VisitedBefore" data-type="radio">
+                  <div class="option-card"><input type="radio" name="Guest2VisitedBefore" value="No"><label class="option-card-label">No — first visit</label></div>
+                  <div class="option-card"><input type="radio" name="Guest2VisitedBefore" value="Yes"><label class="option-card-label">Yes — returning guest</label></div>
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Year of previous visit</label>
+                <input type="text" name="Guest2VisitYear" placeholder="e.g. 2024">
+              </div>
+
+              <!-- Question: Another guest? -->
+              <div class="field-group" style="margin-top: 24px; padding: 16px; background: var(--sand-light); border-radius: var(--radius-sm);">
+                <label class="field-label" style="margin-bottom: 8px;">Is there another guest sharing this suite?</label>
+                <div class="options-grid" data-field="HasGuest3" data-type="radio">
+                  <div class="option-card" onclick="window.KishindoApp.toggleGuestBlock(3, true)"><input type="radio" name="HasGuest3" value="Yes"><label class="option-card-label">Yes — Add Third Guest</label></div>
+                  <div class="option-card selected" onclick="window.KishindoApp.toggleGuestBlock(3, false)"><input type="radio" name="HasGuest3" value="No" checked><label class="option-card-label">No — Move On</label></div>
+                </div>
               </div>
             </div>
+
+            <!-- Guest 3 -->
+            <div class="guest-block" id="guestBlock3" style="display: none; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border-light);">
+              <h4 style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brand-ochre); margin-bottom: 12px;">Third Guest (Guest 3)</h4>
+              <div class="field-group">
+                <label class="field-label">Full Name</label>
+                <input type="text" name="Guest3FullName" placeholder="First and last name">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Has Guest 3 visited Kishindo before?</label>
+                <div class="options-grid" data-field="Guest3VisitedBefore" data-type="radio">
+                  <div class="option-card"><input type="radio" name="Guest3VisitedBefore" value="No"><label class="option-card-label">No — first visit</label></div>
+                  <div class="option-card"><input type="radio" name="Guest3VisitedBefore" value="Yes"><label class="option-card-label">Yes — returning guest</label></div>
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Year of previous visit</label>
+                <input type="text" name="Guest3VisitYear" placeholder="e.g. 2024">
+              </div>
+
+              <!-- Question: Another guest? -->
+              <div class="field-group" style="margin-top: 24px; padding: 16px; background: var(--sand-light); border-radius: var(--radius-sm);">
+                <label class="field-label" style="margin-bottom: 8px;">Is there another guest sharing this suite?</label>
+                <div class="options-grid" data-field="HasGuest4" data-type="radio">
+                  <div class="option-card" onclick="window.KishindoApp.toggleGuestBlock(4, true)"><input type="radio" name="HasGuest4" value="Yes"><label class="option-card-label">Yes — Add Fourth Guest (Max 4)</label></div>
+                  <div class="option-card selected" onclick="window.KishindoApp.toggleGuestBlock(4, false)"><input type="radio" name="HasGuest4" value="No" checked><label class="option-card-label">No — Move On</label></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Guest 4 -->
+            <div class="guest-block" id="guestBlock4" style="display: none; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border-light);">
+              <h4 style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brand-ochre); margin-bottom: 12px;">Fourth Guest (Guest 4)</h4>
+              <div class="field-group">
+                <label class="field-label">Full Name</label>
+                <input type="text" name="Guest4FullName" placeholder="First and last name">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Has Guest 4 visited Kishindo before?</label>
+                <div class="options-grid" data-field="Guest4VisitedBefore" data-type="radio">
+                  <div class="option-card"><input type="radio" name="Guest4VisitedBefore" value="No"><label class="option-card-label">No — first visit</label></div>
+                  <div class="option-card"><input type="radio" name="Guest4VisitedBefore" value="Yes"><label class="option-card-label">Yes — returning guest</label></div>
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Year of previous visit</label>
+                <input type="text" name="Guest4VisitYear" placeholder="e.g. 2024">
+              </div>
+            </div>
+
           </div>
 
           <!-- ── Section 4: Dates of Birth ── -->
@@ -286,9 +349,19 @@
                 <label class="field-label">Date of Birth — Guest 1</label>
                 <input type="date" name="Guest1DOB">
               </div>
-              <div class="field-group">
+              <div class="field-group" id="dobGroup2">
                 <label class="field-label">Date of Birth — Guest 2</label>
                 <input type="date" name="Guest2DOB">
+              </div>
+            </div>
+            <div class="field-row-2" style="margin-top:12px;">
+              <div class="field-group" id="dobGroup3" style="display:none;">
+                <label class="field-label">Date of Birth — Guest 3</label>
+                <input type="date" name="Guest3DOB">
+              </div>
+              <div class="field-group" id="dobGroup4" style="display:none;">
+                <label class="field-label">Date of Birth — Guest 4</label>
+                <input type="date" name="Guest4DOB">
               </div>
             </div>
           </div>
@@ -303,11 +376,21 @@
             <div class="field-row-2">
               <div class="field-group">
                 <label class="field-label">Nationality — Guest 1</label>
-                <input type="text" name="Guest1Nationality" placeholder="e.g. British, South African, German">
+                <input type="text" name="Guest1Nationality" placeholder="e.g. British, South African">
               </div>
-              <div class="field-group">
+              <div class="field-group" id="natGroup2">
                 <label class="field-label">Nationality — Guest 2</label>
-                <input type="text" name="Guest2Nationality" placeholder="e.g. British, South African, American">
+                <input type="text" name="Guest2Nationality" placeholder="e.g. British, South African">
+              </div>
+            </div>
+            <div class="field-row-2" style="margin-top:12px;">
+              <div class="field-group" id="natGroup3" style="display:none;">
+                <label class="field-label">Nationality — Guest 3</label>
+                <input type="text" name="Guest3Nationality" placeholder="e.g. British, South African">
+              </div>
+              <div class="field-group" id="natGroup4" style="display:none;">
+                <label class="field-label">Nationality — Guest 4</label>
+                <input type="text" name="Guest4Nationality" placeholder="e.g. British, South African">
               </div>
             </div>
           </div>
@@ -354,9 +437,17 @@
               <label class="field-label">Special Dietary Requirements — Guest 1 <span class="req">*</span></label>
               <textarea name="Guest1DietaryRequirements" placeholder="e.g. Strictly vegetarian, no shellfish, gluten-free, no pork…"></textarea>
             </div>
-            <div class="field-group">
+            <div class="field-group" id="dietGroup2">
               <label class="field-label">Special Dietary Requirements — Guest 2</label>
               <textarea name="Guest2DietaryRequirements" placeholder="e.g. Nut allergy, lactose intolerant…"></textarea>
+            </div>
+            <div class="field-group" id="dietGroup3" style="display:none;">
+              <label class="field-label">Special Dietary Requirements — Guest 3</label>
+              <textarea name="Guest3DietaryRequirements" placeholder="e.g. Vegetarian, no fish…"></textarea>
+            </div>
+            <div class="field-group" id="dietGroup4" style="display:none;">
+              <label class="field-label">Special Dietary Requirements — Guest 4</label>
+              <textarea name="Guest4DietaryRequirements" placeholder="e.g. No dairy…"></textarea>
             </div>
           </div>
 
@@ -386,9 +477,17 @@
               <label class="field-label">Medical Conditions / Allergies — Guest 1 <span class="req">*</span></label>
               <textarea name="Guest1MedicalConditions" placeholder="Please describe any medical conditions, asthma, severe bee sting allergies, or mobility requirements…"></textarea>
             </div>
-            <div class="field-group">
+            <div class="field-group" id="medGroup2">
               <label class="field-label">Medical Conditions / Allergies — Guest 2</label>
               <textarea name="Guest2MedicalConditions" placeholder="Please describe any conditions…"></textarea>
+            </div>
+            <div class="field-group" id="medGroup3" style="display:none;">
+              <label class="field-label">Medical Conditions / Allergies — Guest 3</label>
+              <textarea name="Guest3MedicalConditions" placeholder="Please describe any conditions…"></textarea>
+            </div>
+            <div class="field-group" id="medGroup4" style="display:none;">
+              <label class="field-label">Medical Conditions / Allergies — Guest 4</label>
+              <textarea name="Guest4MedicalConditions" placeholder="Please describe any conditions…"></textarea>
             </div>
           </div>
 
@@ -610,7 +709,7 @@
           </table>
 
           <div style="margin-top: 18px;">
-            <a href="https://goo.gl/maps/nPeZzKLW8ghHLL3e7" target="_blank" class="btn btn-outline btn-sm">
+            <a href="https://goo.gl/maps/nPeZzKLW8ghHLL3e7" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
               📍 Open Google Maps Pin (Kishindo / Tiger Canyon) →
             </a>
           </div>
@@ -619,7 +718,7 @@
           <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--border-light); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 13px;">
             <div><strong>Canyon Lodge WhatsApp / Phone:</strong> <a href="tel:+27662908424">+27 66 290 8424</a></div>
             <div><strong>Reservations:</strong> <a href="mailto:reservations@kishindowild.com">reservations@kishindowild.com</a></div>
-            <div><strong>Website:</strong> <a href="https://www.kishindowild.com" target="_blank">kishindowild.com</a></div>
+            <div><strong>Website:</strong> <a href="https://kishindowild.com/" target="_blank">kishindowild.com</a></div>
           </div>
 
         </div>
@@ -643,8 +742,8 @@
           </div>
           <div class="dashboard-actions-group">
             <button class="btn btn-ochre btn-sm" onclick="window.KishindoApp.openNewBookingModal()">+ New Booking</button>
-            <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.downloadCSV()">⬇ Export CSV</button>
-            <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.downloadJSON()">⬇ Export Backup</button>
+            <button class="btn btn-primary btn-sm" onclick="window.KishindoApp.downloadCSV()">📊 Download Database to Excel</button>
+            <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.downloadJSON()">⬇ Backup JSON</button>
           </div>
         </div>
 
@@ -676,8 +775,9 @@
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; flex-wrap:wrap; gap:8px;">
                 <span style="font-size:11px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;">Outlook Email Dispatcher</span>
                 <div style="display:flex; gap:8px;">
-                  <button class="btn btn-outline btn-sm email-tab-btn active" data-type="pre" onclick="window.KishindoApp.switchEmailTab('pre')">Pre-Deposit</button>
-                  <button class="btn btn-outline btn-sm email-tab-btn" data-type="post" onclick="window.KishindoApp.switchEmailTab('post')">Deposit-Received</button>
+                  <button class="btn btn-outline btn-sm email-tab-btn active" data-type="provisional" onclick="window.KishindoApp.switchEmailTab('provisional')">1. Provisional (Pre-Deposit)</button>
+                  <button class="btn btn-outline btn-sm email-tab-btn" data-type="confirmed" onclick="window.KishindoApp.switchEmailTab('confirmed')">2. Confirmed (Deposit Paid)</button>
+                  <button class="btn btn-outline btn-sm email-tab-btn" data-type="ready" onclick="window.KishindoApp.switchEmailTab('ready')">3. Sanctuary Ready (Cleared)</button>
                   <button class="btn btn-primary btn-sm" onclick="window.KishindoApp.copyEmailPreview()">✉ Copy Email</button>
                 </div>
               </div>
@@ -750,12 +850,11 @@
             <input type="number" id="nb_guests" value="2" min="1" max="6">
           </div>
           <div class="field-group">
-            <label class="field-label">Rate Category</label>
-            <select id="nb_rate">
-              <option value="Rack Rate">Rack Rate (Rates Card)</option>
-              <option value="SADC 10%">SADC 10%</option>
-              <option value="Trade Rate">Trade Rate</option>
-              <option value="Special Offer">Special Offer</option>
+            <label class="field-label">Booking Stage</label>
+            <select id="nb_stage">
+              <option value="Provisional">Provisional (Awaiting Deposit)</option>
+              <option value="Confirmed">Confirmed (Deposit Received)</option>
+              <option value="Sanctuary Ready">Sanctuary Ready (Balance Cleared)</option>
             </select>
           </div>
         </div>
@@ -768,57 +867,78 @@
         <div class="field-row-2" style="margin-bottom: 10px;">
           <div>
             <label class="field-label">Room 1</label>
-            <select id="nb_suite_1">
+            <select id="nb_suite_1" onchange="window.KishindoApp.handleSuiteSelectChange(1)">
               <option value="Tibo">Tibo (Suite 1)</option>
               <option value="Ussuri">Ussuri (Suite 2)</option>
               <option value="Zaria">Zaria (Suite 3)</option>
               <option value="">— None —</option>
             </select>
           </div>
-          <div>
-            <label class="field-label">Bed Setup</label>
-            <select id="nb_bed_1">
-              <option value="King Bed">King Bed</option>
-              <option value="Twin Beds">Twin Beds</option>
-            </select>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <label class="field-label">Bed Setup</label>
+              <select id="nb_bed_1">
+                <option value="King Bed">King Bed</option>
+                <option value="Twin Beds">Twin Beds</option>
+                <option value="— None —">— None —</option>
+              </select>
+            </div>
+            <div style="width:90px;">
+              <label class="field-label">PIN</label>
+              <input type="text" id="nb_pin_1" maxlength="4" placeholder="Auto" style="text-align:center;font-weight:600;letter-spacing:0.1em;">
+            </div>
           </div>
         </div>
 
         <div class="field-row-2" style="margin-bottom: 10px;">
           <div>
             <label class="field-label">Room 2</label>
-            <select id="nb_suite_2">
+            <select id="nb_suite_2" onchange="window.KishindoApp.handleSuiteSelectChange(2)">
               <option value="">— None —</option>
               <option value="Tibo">Tibo (Suite 1)</option>
               <option value="Ussuri" selected>Ussuri (Suite 2)</option>
               <option value="Zaria">Zaria (Suite 3)</option>
             </select>
           </div>
-          <div>
-            <label class="field-label">Bed Setup</label>
-            <select id="nb_bed_2">
-              <option value="King Bed">King Bed</option>
-              <option value="Twin Beds">Twin Beds</option>
-            </select>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <label class="field-label">Bed Setup</label>
+              <select id="nb_bed_2">
+                <option value="King Bed">King Bed</option>
+                <option value="Twin Beds">Twin Beds</option>
+                <option value="— None —">— None —</option>
+              </select>
+            </div>
+            <div style="width:90px;">
+              <label class="field-label">PIN</label>
+              <input type="text" id="nb_pin_2" maxlength="4" placeholder="Auto" style="text-align:center;font-weight:600;letter-spacing:0.1em;">
+            </div>
           </div>
         </div>
 
         <div class="field-row-2" style="margin-bottom: 16px;">
           <div>
             <label class="field-label">Room 3</label>
-            <select id="nb_suite_3">
-              <option value="">— None —</option>
+            <select id="nb_suite_3" onchange="window.KishindoApp.handleSuiteSelectChange(3)">
+              <option value="" selected>— None —</option>
               <option value="Tibo">Tibo (Suite 1)</option>
               <option value="Ussuri">Ussuri (Suite 2)</option>
               <option value="Zaria">Zaria (Suite 3)</option>
             </select>
           </div>
-          <div>
-            <label class="field-label">Bed Setup</label>
-            <select id="nb_bed_3">
-              <option value="King Bed">King Bed</option>
-              <option value="Twin Beds">Twin Beds</option>
-            </select>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <label class="field-label">Bed Setup</label>
+              <select id="nb_bed_3">
+                <option value="— None —" selected>— None —</option>
+                <option value="King Bed">King Bed</option>
+                <option value="Twin Beds">Twin Beds</option>
+              </select>
+            </div>
+            <div style="width:90px;">
+              <label class="field-label">PIN</label>
+              <input type="text" id="nb_pin_3" maxlength="4" placeholder="Auto" style="text-align:center;font-weight:600;letter-spacing:0.1em;">
+            </div>
           </div>
         </div>
 

@@ -96,34 +96,19 @@ h1, h2, h3, h4 {
   cursor: pointer;
 }
 
-.logo-symbol {
-  width: 48px;
+/* ── Brand Logos ── */
+.header-logo-img {
   height: 48px;
-  flex-shrink: 0;
+  width: auto;
+  object-fit: contain;
+  display: block;
 }
 
-.brand-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.brand-title {
-  font-family: var(--font-sans);
-  font-size: 19px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--charcoal-black);
-  line-height: 1.1;
-}
-
-.brand-subtitle {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  color: var(--brand-ochre);
-  margin-top: 3px;
+.auth-logo-img {
+  max-width: 280px;
+  height: auto;
+  margin: 0 auto 20px;
+  display: block;
 }
 
 .header-actions {
