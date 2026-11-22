@@ -120,18 +120,18 @@
             CheckInDate: '2026-12-14',
             CheckOutDate: '2026-12-18',
             Guest1FullName: 'Emily Carter',
-            Guest1VisitedBefore: 'No',
+            Guest1VisitedBefore: '',
             Guest1VisitYear: '',
-            HasGuest2: 'No',
-            Guest2FullName: 'Michael Carter',
-            Guest2VisitedBefore: 'No',
+            HasGuest2: '',
+            Guest2FullName: '',
+            Guest2VisitedBefore: '',
             Guest1Nationality: 'British',
-            Guest2Nationality: 'British',
+            Guest2Nationality: '',
             RoomConfiguration: 'King Bed',
-            HasDietaryPreferences: 'Yes',
-            Guest1DietaryRequirements: 'Strictly no fish or seafood',
-            Guest2DietaryRequirements: 'None',
-            HasMedicalConditions: 'No',
+            Guest1HasDiet: '',
+            Guest1DietaryRequirements: '',
+            Guest1HasMed: '',
+            Guest1MedicalConditions: '',
             ReasonsForStay: ['Tiger photography', 'Cheetah photography', 'A special occasion or celebration'],
             SpecialOccasions: '10th Wedding Anniversary celebration during our stay',
             TransportMethod: ['Private Road Shuttle from Bloemfontein'],
@@ -566,15 +566,18 @@
 
     // Sync visit year toggles
     for (let i = 1; i <= 4; i++) {
-      const isVisited = document.querySelector(`input[name="Guest${i}VisitedBefore"]:checked`)?.value || State.formData[`Guest${i}VisitedBefore`];
+      const checkedVisited = document.querySelector(`input[name="Guest${i}VisitedBefore"]:checked`)?.value;
+      const isVisited = checkedVisited !== undefined ? checkedVisited : State.formData[`Guest${i}VisitedBefore`];
       const vyGroup = document.getElementById(`visitYearGroup${i}`);
       if (vyGroup) vyGroup.style.display = isVisited === "Yes" ? "block" : "none";
 
-      const hasDiet = document.querySelector(`input[name="Guest${i}HasDiet"]:checked`)?.value || State.formData[`Guest${i}HasDiet`];
+      const checkedDiet = document.querySelector(`input[name="Guest${i}HasDiet"]:checked`)?.value;
+      const hasDiet = checkedDiet !== undefined ? checkedDiet : State.formData[`Guest${i}HasDiet`];
       const dietBox = document.getElementById(`dietDetailBox${i}`);
       if (dietBox) dietBox.style.display = hasDiet === "Yes" ? "block" : "none";
 
-      const hasMed = document.querySelector(`input[name="Guest${i}HasMed"]:checked`)?.value || State.formData[`Guest${i}HasMed`];
+      const checkedMed = document.querySelector(`input[name="Guest${i}HasMed"]:checked`)?.value;
+      const hasMed = checkedMed !== undefined ? checkedMed : State.formData[`Guest${i}HasMed`];
       const medBox = document.getElementById(`medDetailBox${i}`);
       if (medBox) medBox.style.display = hasMed === "Yes" ? "block" : "none";
     }
@@ -1117,7 +1120,12 @@ https://kishindowild.com/`;
         grid.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
         card.classList.add('selected');
         const r = card.querySelector('input[type="radio"]');
-        if (r) r.checked = true;
+        if (r) {
+          r.checked = true;
+          if (grid.dataset.field) {
+            State.formData[grid.dataset.field] = r.value;
+          }
+        }
       } else {
         const cb = card.querySelector('input[type="checkbox"]');
         if (e.target !== cb) cb.checked = !cb.checked;
@@ -1594,59 +1602,62 @@ https://kishindowild.com/`;
     },
 
     toggleVisitYear(guestNum, show) {
+      State.formData[`Guest${guestNum}VisitedBefore`] = show ? "Yes" : "No";
       const el = document.getElementById(`visitYearGroup${guestNum}`);
       if (el) el.style.display = show ? "block" : "none";
       if (!show) {
         const inp = el?.querySelector("input");
-        if (inp) inp.value = "";
+        if (inp) { inp.value = ""; State.formData[`Guest${guestNum}VisitYear`] = ""; }
       }
     },
     toggleDietBox(guestNum, show) {
+      State.formData[`Guest${guestNum}HasDiet`] = show ? "Yes" : "No";
       const el = document.getElementById(`dietDetailBox${guestNum}`);
       if (el) el.style.display = show ? "block" : "none";
       if (!show) {
         const txt = el?.querySelector("textarea");
-        if (txt) txt.value = "";
+        if (txt) { txt.value = ""; State.formData[`Guest${guestNum}DietaryRequirements`] = ""; }
       }
     },
     toggleMedBox(guestNum, show) {
+      State.formData[`Guest${guestNum}HasMed`] = show ? "Yes" : "No";
       const el = document.getElementById(`medDetailBox${guestNum}`);
       if (el) el.style.display = show ? "block" : "none";
       if (!show) {
         const txt = el?.querySelector("textarea");
-        if (txt) txt.value = "";
+        if (txt) { txt.value = ""; State.formData[`Guest${guestNum}MedicalConditions`] = ""; }
       }
     },
     updateDynamicGuestNames,
     toggleGuestBlock(guestNum, show) {
+      State.formData[`HasGuest${guestNum}`] = show ? "Yes" : "No";
       const block = document.getElementById(`guestBlock${guestNum}`);
-      if (block) block.style.display = show ? 'block' : 'none';
+      if (block) block.style.display = show ? "block" : "none";
 
-      // Also toggle subfields in DOB, Nationality, Dietary, Medical
       const dob = document.getElementById(`dobGroup${guestNum}`);
-      if (dob) dob.style.display = show ? 'block' : 'none';
+      if (dob) dob.style.display = show ? "block" : "none";
 
       const nat = document.getElementById(`natGroup${guestNum}`);
-      if (nat) nat.style.display = show ? 'block' : 'none';
+      if (nat) nat.style.display = show ? "block" : "none";
 
-      const diet = document.getElementById(`dietGroup${guestNum}`);
-      if (diet) diet.style.display = show ? 'block' : 'none';
+      const dietBlock = document.getElementById(`dietBlock${guestNum}`);
+      if (dietBlock) dietBlock.style.display = show ? "block" : "none";
 
-      const med = document.getElementById(`medGroup${guestNum}`);
-      if (med) med.style.display = show ? 'block' : 'none';
+      const medBlock = document.getElementById(`medBlock${guestNum}`);
+      if (medBlock) medBlock.style.display = show ? "block" : "none";
 
-      // If hiding, also clear subfields of further guests
+      // If hiding, also clear and collapse further guests
       if (!show) {
         for (let i = guestNum + 1; i <= 4; i++) {
           this.toggleGuestBlock(i, false);
-          const r = document.querySelector(`input[name="HasGuest${i}"][value="No"]`);
-          if (r) {
-            r.checked = true;
-            r.closest('.option-card')?.classList.add('selected');
-            r.closest('.options-grid')?.querySelectorAll('.option-card')[0]?.classList.remove('selected');
-          }
+          const rYes = document.querySelector(`input[name="HasGuest${i}"][value="Yes"]`);
+          const rNo = document.querySelector(`input[name="HasGuest${i}"][value="No"]`);
+          if (rYes) { rYes.checked = false; rYes.closest('.option-card')?.classList.remove('selected'); }
+          if (rNo) { rNo.checked = false; rNo.closest('.option-card')?.classList.remove('selected'); }
+          State.formData[`HasGuest${i}`] = "";
         }
       }
+      syncGuestFieldsVisibility();
     },
     handleSuiteSelectChange(idx) {
       const suiteEl = document.getElementById(`nb_suite_${idx}`);
