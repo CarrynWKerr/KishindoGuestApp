@@ -120,8 +120,9 @@
             CheckInDate: '2026-12-14',
             CheckOutDate: '2026-12-18',
             Guest1FullName: 'Emily Carter',
-            Guest1VisitedBefore: 'Yes',
-            Guest1VisitYear: '2024',
+            Guest1VisitedBefore: 'No',
+            Guest1VisitYear: '',
+            HasGuest2: 'No',
             Guest2FullName: 'Michael Carter',
             Guest2VisitedBefore: 'No',
             Guest1Nationality: 'British',
@@ -395,6 +396,7 @@
 
     const activeEl = document.getElementById(currentSec.id);
     syncGuestFieldsVisibility();
+    updateDynamicGuestNames();
     if (activeEl) activeEl.classList.add('active');
 
     // Update progress bar
@@ -441,6 +443,71 @@
     if (g2 === "Yes" && g3 === "Yes") count = 3;
     if (g2 === "Yes" && g3 === "Yes" && g4 === "Yes") count = 4;
     return count;
+  }
+
+  function updateDynamicGuestNames() {
+    for (let i = 1; i <= 4; i++) {
+      const inp = document.querySelector(`input[name="Guest${i}FullName"]`);
+      const val = (inp ? inp.value.trim() : "") || State.formData[`Guest${i}FullName`] || "";
+      const displayName = val || (i === 1 ? "Guest 1" : `Guest ${i}`);
+      const possessive = val ? (val.endsWith("s") ? `${val}'` : `${val}'s`) : (i === 1 ? "Guest 1's" : `Guest ${i}'s`);
+
+      // 1. Visited before question
+      const visitedLbl = document.getElementById(`lbl_Guest${i}VisitedBefore`);
+      if (visitedLbl) {
+        if (i === 1) {
+          visitedLbl.textContent = val ? `Has ${val} visited Kishindo before?` : "Have you visited Kishindo before?";
+        } else {
+          visitedLbl.textContent = val ? `Has ${val} visited Kishindo before?` : `Has Guest ${i} visited Kishindo before?`;
+        }
+      }
+
+      // 2. Section 4: DOB label
+      const dobLbl = document.getElementById(`lbl_Guest${i}DOB`);
+      if (dobLbl) {
+        dobLbl.textContent = `Date of Birth — ${displayName}`;
+      }
+
+      // 3. Section 5: Nationality label
+      const natLbl = document.getElementById(`lbl_Guest${i}Nationality`);
+      if (natLbl) {
+        natLbl.textContent = `Nationality — ${displayName}`;
+      }
+
+      // 4. Section 7: Dietary labels
+      const dietTitle = document.getElementById(`lbl_dietTitle${i}`);
+      if (dietTitle) {
+        dietTitle.textContent = val ? `${possessive} Dietary Requirements` : (i === 1 ? "Dietary Requirements" : `Guest ${i} Dietary Requirements`);
+      }
+      const dietQuestion = document.getElementById(`lbl_Guest${i}HasDiet`);
+      if (dietQuestion) {
+        dietQuestion.textContent = val ? `Does ${val} have any dietary requirements or food allergies?` : (i === 1 ? "Do you have any dietary requirements or food allergies?" : `Does Guest ${i} have any dietary requirements or food allergies?`);
+      }
+      const dietReq = document.getElementById(`lbl_Guest${i}DietaryRequirements`);
+      if (dietReq) {
+        dietReq.innerHTML = val ? `Special Dietary Requirements — ${val} <span class="req">*</span>` : (i === 1 ? "Special Dietary Requirements <span class=\"req\">*</span>" : `Special Dietary Requirements — Guest ${i} <span class=\"req\">*</span>`);
+      }
+
+      // 5. Section 8: Medical labels
+      const medTitle = document.getElementById(`lbl_medTitle${i}`);
+      if (medTitle) {
+        medTitle.textContent = val ? `${possessive} Medical Safety` : (i === 1 ? "Medical Safety" : `Guest ${i} Medical Safety`);
+      }
+      const medQuestion = document.getElementById(`lbl_Guest${i}HasMed`);
+      if (medQuestion) {
+        medQuestion.textContent = val ? `Does ${val} have any medical conditions, allergies, or mobility requirements?` : (i === 1 ? "Do you have any medical conditions, asthma, severe allergies, or mobility requirements?" : `Does Guest ${i} have any medical conditions, allergies, or mobility requirements?`);
+      }
+      const medReq = document.getElementById(`lbl_Guest${i}MedicalConditions`);
+      if (medReq) {
+        medReq.innerHTML = val ? `Medical Conditions / Allergies / Mobility — ${val} <span class="req">*</span>` : (i === 1 ? "Medical Conditions / Allergies / Mobility <span class=\"req\">*</span>" : `Medical Conditions / Allergies / Mobility — Guest ${i} <span class=\"req\">*</span>`);
+      }
+
+      // 6. Section 3 guest header
+      const headerTitle = document.getElementById(`guest${i}HeaderTitle`);
+      if (headerTitle) {
+        headerTitle.textContent = val ? val : (i === 1 ? "Guest Details" : `Guest ${i}`);
+      }
+    }
   }
 
   function syncGuestFieldsVisibility() {
@@ -1550,6 +1617,7 @@ https://kishindowild.com/`;
         if (txt) txt.value = "";
       }
     },
+    updateDynamicGuestNames,
     toggleGuestBlock(guestNum, show) {
       const block = document.getElementById(`guestBlock${guestNum}`);
       if (block) block.style.display = show ? 'block' : 'none';

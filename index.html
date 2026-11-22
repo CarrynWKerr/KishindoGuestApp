@@ -242,13 +242,13 @@
 
             <!-- Guest 1 -->
             <div class="guest-block" id="guestBlock1">
-              <h4 style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brand-ochre); margin-bottom: 12px;">Primary Guest (Guest 1)</h4>
+              <h4 style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brand-ochre); margin-bottom: 12px;" id="guest1HeaderTitle">Guest Details</h4>
               <div class="field-group">
                 <label class="field-label">Full Name <span class="req">*</span></label>
-                <input type="text" name="Guest1FullName" placeholder="First and last name" required>
+                <input type="text" name="Guest1FullName" placeholder="First and last name" required oninput="window.KishindoApp.updateDynamicGuestNames()">
               </div>
               <div class="field-group">
-                <label class="field-label">Has Guest 1 visited Kishindo before? <span class="req">*</span></label>
+                <label class="field-label"><span id="lbl_Guest1VisitedBefore">Have you visited Kishindo before?</span> <span class="req">*</span></label>
                 <div class="options-grid" data-field="Guest1VisitedBefore" data-type="radio">
                   <div class="option-card selected" onclick="window.KishindoApp.toggleVisitYear(1, false)"><input type="radio" name="Guest1VisitedBefore" value="No" checked><label class="option-card-label">No — first visit</label></div>
                   <div class="option-card" onclick="window.KishindoApp.toggleVisitYear(1, true)"><input type="radio" name="Guest1VisitedBefore" value="Yes"><label class="option-card-label">Yes — returning guest</label></div>
@@ -274,10 +274,10 @@
               <h4 style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brand-ochre); margin-bottom: 12px;">Second Guest (Guest 2)</h4>
               <div class="field-group">
                 <label class="field-label">Full Name</label>
-                <input type="text" name="Guest2FullName" placeholder="First and last name">
+                <input type="text" name="Guest2FullName" placeholder="First and last name" oninput="window.KishindoApp.updateDynamicGuestNames()">
               </div>
               <div class="field-group">
-                <label class="field-label">Has Guest 2 visited Kishindo before?</label>
+                <label class="field-label"><span id="lbl_Guest2VisitedBefore">Has Guest 2 visited Kishindo before?</span></label>
                 <div class="options-grid" data-field="Guest2VisitedBefore" data-type="radio">
                   <div class="option-card selected" onclick="window.KishindoApp.toggleVisitYear(2, false)"><input type="radio" name="Guest2VisitedBefore" value="No" checked><label class="option-card-label">No — first visit</label></div>
                   <div class="option-card" onclick="window.KishindoApp.toggleVisitYear(2, true)"><input type="radio" name="Guest2VisitedBefore" value="Yes"><label class="option-card-label">Yes — returning guest</label></div>
@@ -303,10 +303,10 @@
               <h4 style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brand-ochre); margin-bottom: 12px;">Third Guest (Guest 3)</h4>
               <div class="field-group">
                 <label class="field-label">Full Name</label>
-                <input type="text" name="Guest3FullName" placeholder="First and last name">
+                <input type="text" name="Guest3FullName" placeholder="First and last name" oninput="window.KishindoApp.updateDynamicGuestNames()">
               </div>
               <div class="field-group">
-                <label class="field-label">Has Guest 3 visited Kishindo before?</label>
+                <label class="field-label"><span id="lbl_Guest3VisitedBefore">Has Guest 3 visited Kishindo before?</span></label>
                 <div class="options-grid" data-field="Guest3VisitedBefore" data-type="radio">
                   <div class="option-card selected" onclick="window.KishindoApp.toggleVisitYear(3, false)"><input type="radio" name="Guest3VisitedBefore" value="No" checked><label class="option-card-label">No — first visit</label></div>
                   <div class="option-card" onclick="window.KishindoApp.toggleVisitYear(3, true)"><input type="radio" name="Guest3VisitedBefore" value="Yes"><label class="option-card-label">Yes — returning guest</label></div>
@@ -332,10 +332,10 @@
               <h4 style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brand-ochre); margin-bottom: 12px;">Fourth Guest (Guest 4)</h4>
               <div class="field-group">
                 <label class="field-label">Full Name</label>
-                <input type="text" name="Guest4FullName" placeholder="First and last name">
+                <input type="text" name="Guest4FullName" placeholder="First and last name" oninput="window.KishindoApp.updateDynamicGuestNames()">
               </div>
               <div class="field-group">
-                <label class="field-label">Has Guest 4 visited Kishindo before?</label>
+                <label class="field-label"><span id="lbl_Guest4VisitedBefore">Has Guest 4 visited Kishindo before?</span></label>
                 <div class="options-grid" data-field="Guest4VisitedBefore" data-type="radio">
                   <div class="option-card selected" onclick="window.KishindoApp.toggleVisitYear(4, false)"><input type="radio" name="Guest4VisitedBefore" value="No" checked><label class="option-card-label">No — first visit</label></div>
                   <div class="option-card" onclick="window.KishindoApp.toggleVisitYear(4, true)"><input type="radio" name="Guest4VisitedBefore" value="Yes"><label class="option-card-label">Yes — returning guest</label></div>
@@ -357,19 +357,19 @@
               <p class="step-lead">We would love to know your date of birth so our lodge team can celebrate special milestones and birthdays with you during your stay.</p>
             </div>
             <div class="field-group" id="dobGroup1">
-              <label class="field-label">Date of Birth — Primary Guest (Guest 1)</label>
+              <label class="field-label" id="lbl_Guest1DOB">Date of Birth</label>
               <input type="date" name="Guest1DOB">
             </div>
             <div class="field-group" id="dobGroup2" style="display:none;">
-              <label class="field-label">Date of Birth — Guest 2</label>
+              <label class="field-label" id="lbl_Guest2DOB">Date of Birth — Guest 2</label>
               <input type="date" name="Guest2DOB">
             </div>
             <div class="field-group" id="dobGroup3" style="display:none;">
-              <label class="field-label">Date of Birth — Guest 3</label>
+              <label class="field-label" id="lbl_Guest3DOB">Date of Birth — Guest 3</label>
               <input type="date" name="Guest3DOB">
             </div>
             <div class="field-group" id="dobGroup4" style="display:none;">
-              <label class="field-label">Date of Birth — Guest 4</label>
+              <label class="field-label" id="lbl_Guest4DOB">Date of Birth — Guest 4</label>
               <input type="date" name="Guest4DOB">
             </div>
           </div>
@@ -382,19 +382,19 @@
               <p class="step-lead">Helps our lodge team tailor your stay and hospitality, welcoming guests from all around the world into our hidden reserve.</p>
             </div>
             <div class="field-group" id="natGroup1">
-              <label class="field-label">Nationality — Primary Guest (Guest 1)</label>
+              <label class="field-label" id="lbl_Guest1Nationality">Nationality</label>
               <input type="text" name="Guest1Nationality" placeholder="e.g. British, South African, German">
             </div>
             <div class="field-group" id="natGroup2" style="display:none;">
-              <label class="field-label">Nationality — Guest 2</label>
+              <label class="field-label" id="lbl_Guest2Nationality">Nationality — Guest 2</label>
               <input type="text" name="Guest2Nationality" placeholder="e.g. British, South African, German">
             </div>
             <div class="field-group" id="natGroup3" style="display:none;">
-              <label class="field-label">Nationality — Guest 3</label>
+              <label class="field-label" id="lbl_Guest3Nationality">Nationality — Guest 3</label>
               <input type="text" name="Guest3Nationality" placeholder="e.g. British, South African, German">
             </div>
             <div class="field-group" id="natGroup4" style="display:none;">
-              <label class="field-label">Nationality — Guest 4</label>
+              <label class="field-label" id="lbl_Guest4Nationality">Nationality — Guest 4</label>
               <input type="text" name="Guest4Nationality" placeholder="e.g. British, South African, German">
             </div>
           </div>
@@ -447,64 +447,64 @@
 
             <!-- Guest 1 Dietary -->
             <div class="diet-guest-block" id="dietBlock1" style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-light);">
-              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;">Primary Guest (Guest 1) Dietary Requirements</h4>
+              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;" id="lbl_dietTitle1">Dietary Requirements</h4>
               <div class="field-group">
-                <label class="field-label">Does Guest 1 have any dietary requirements or food allergies?</label>
+                <label class="field-label" id="lbl_Guest1HasDiet">Do you have any dietary requirements or food allergies?</label>
                 <div class="options-grid" data-field="Guest1HasDiet" data-type="radio">
                   <div class="option-card selected" onclick="window.KishindoApp.toggleDietBox(1, false)"><input type="radio" name="Guest1HasDiet" value="No" checked><label class="option-card-label">No — no dietary restrictions or allergies</label></div>
                   <div class="option-card" onclick="window.KishindoApp.toggleDietBox(1, true)"><input type="radio" name="Guest1HasDiet" value="Yes"><label class="option-card-label">Yes — has dietary preferences or allergies</label></div>
                 </div>
               </div>
               <div class="field-group" id="dietDetailBox1" style="display:none; margin-top:12px;">
-                <label class="field-label">Special Dietary Requirements — Guest 1 <span class="req">*</span></label>
+                <label class="field-label" id="lbl_Guest1DietaryRequirements">Special Dietary Requirements <span class="req">*</span></label>
                 <textarea name="Guest1DietaryRequirements" placeholder="e.g. Strictly vegetarian, no shellfish, gluten-free, no pork, lactose intolerant…"></textarea>
               </div>
             </div>
 
             <!-- Guest 2 Dietary -->
             <div class="diet-guest-block" id="dietBlock2" style="display:none; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-light);">
-              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;">Guest 2 Dietary Requirements</h4>
+              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;" id="lbl_dietTitle2">Guest 2 Dietary Requirements</h4>
               <div class="field-group">
-                <label class="field-label">Does Guest 2 have any dietary requirements or food allergies?</label>
+                <label class="field-label" id="lbl_Guest2HasDiet">Does Guest 2 have any dietary requirements or food allergies?</label>
                 <div class="options-grid" data-field="Guest2HasDiet" data-type="radio">
                   <div class="option-card selected" onclick="window.KishindoApp.toggleDietBox(2, false)"><input type="radio" name="Guest2HasDiet" value="No" checked><label class="option-card-label">No — no dietary restrictions or allergies</label></div>
                   <div class="option-card" onclick="window.KishindoApp.toggleDietBox(2, true)"><input type="radio" name="Guest2HasDiet" value="Yes"><label class="option-card-label">Yes — has dietary preferences or allergies</label></div>
                 </div>
               </div>
               <div class="field-group" id="dietDetailBox2" style="display:none; margin-top:12px;">
-                <label class="field-label">Special Dietary Requirements — Guest 2 <span class="req">*</span></label>
+                <label class="field-label" id="lbl_Guest2DietaryRequirements">Special Dietary Requirements — Guest 2 <span class="req">*</span></label>
                 <textarea name="Guest2DietaryRequirements" placeholder="e.g. Nut allergy, gluten-free, pescatarian, no dairy…"></textarea>
               </div>
             </div>
 
             <!-- Guest 3 Dietary -->
             <div class="diet-guest-block" id="dietBlock3" style="display:none; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-light);">
-              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;">Guest 3 Dietary Requirements</h4>
+              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;" id="lbl_dietTitle3">Guest 3 Dietary Requirements</h4>
               <div class="field-group">
-                <label class="field-label">Does Guest 3 have any dietary requirements or food allergies?</label>
+                <label class="field-label" id="lbl_Guest3HasDiet">Does Guest 3 have any dietary requirements or food allergies?</label>
                 <div class="options-grid" data-field="Guest3HasDiet" data-type="radio">
                   <div class="option-card selected" onclick="window.KishindoApp.toggleDietBox(3, false)"><input type="radio" name="Guest3HasDiet" value="No" checked><label class="option-card-label">No — no dietary restrictions or allergies</label></div>
                   <div class="option-card" onclick="window.KishindoApp.toggleDietBox(3, true)"><input type="radio" name="Guest3HasDiet" value="Yes"><label class="option-card-label">Yes — has dietary preferences or allergies</label></div>
                 </div>
               </div>
               <div class="field-group" id="dietDetailBox3" style="display:none; margin-top:12px;">
-                <label class="field-label">Special Dietary Requirements — Guest 3 <span class="req">*</span></label>
+                <label class="field-label" id="lbl_Guest3DietaryRequirements">Special Dietary Requirements — Guest 3 <span class="req">*</span></label>
                 <textarea name="Guest3DietaryRequirements" placeholder="e.g. Vegetarian, no fish…"></textarea>
               </div>
             </div>
 
             <!-- Guest 4 Dietary -->
             <div class="diet-guest-block" id="dietBlock4" style="display:none; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-light);">
-              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;">Guest 4 Dietary Requirements</h4>
+              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;" id="lbl_dietTitle4">Guest 4 Dietary Requirements</h4>
               <div class="field-group">
-                <label class="field-label">Does Guest 4 have any dietary requirements or food allergies?</label>
+                <label class="field-label" id="lbl_Guest4HasDiet">Does Guest 4 have any dietary requirements or food allergies?</label>
                 <div class="options-grid" data-field="Guest4HasDiet" data-type="radio">
                   <div class="option-card selected" onclick="window.KishindoApp.toggleDietBox(4, false)"><input type="radio" name="Guest4HasDiet" value="No" checked><label class="option-card-label">No — no dietary restrictions or allergies</label></div>
                   <div class="option-card" onclick="window.KishindoApp.toggleDietBox(4, true)"><input type="radio" name="Guest4HasDiet" value="Yes"><label class="option-card-label">Yes — has dietary preferences or allergies</label></div>
                 </div>
               </div>
               <div class="field-group" id="dietDetailBox4" style="display:none; margin-top:12px;">
-                <label class="field-label">Special Dietary Requirements — Guest 4 <span class="req">*</span></label>
+                <label class="field-label" id="lbl_Guest4DietaryRequirements">Special Dietary Requirements — Guest 4 <span class="req">*</span></label>
                 <textarea name="Guest4DietaryRequirements" placeholder="e.g. No dairy…"></textarea>
               </div>
             </div>
@@ -520,64 +520,64 @@
 
             <!-- Guest 1 Medical -->
             <div class="med-guest-block" id="medBlock1" style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-light);">
-              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;">Primary Guest (Guest 1) Medical Safety</h4>
+              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;" id="lbl_medTitle1">Medical Safety</h4>
               <div class="field-group">
-                <label class="field-label">Does Guest 1 have any medical conditions, asthma, severe bee sting allergies, or mobility requirements?</label>
+                <label class="field-label" id="lbl_Guest1HasMed">Do you have any medical conditions, asthma, severe bee sting allergies, or mobility requirements?</label>
                 <div class="options-grid" data-field="Guest1HasMed" data-type="radio">
                   <div class="option-card selected" onclick="window.KishindoApp.toggleMedBox(1, false)"><input type="radio" name="Guest1HasMed" value="No" checked><label class="option-card-label">No — no medical conditions or mobility needs</label></div>
                   <div class="option-card" onclick="window.KishindoApp.toggleMedBox(1, true)"><input type="radio" name="Guest1HasMed" value="Yes"><label class="option-card-label">Yes — has medical conditions or allergies to note</label></div>
                 </div>
               </div>
               <div class="field-group" id="medDetailBox1" style="display:none; margin-top:12px;">
-                <label class="field-label">Medical Conditions / Allergies / Mobility — Guest 1 <span class="req">*</span></label>
+                <label class="field-label" id="lbl_Guest1MedicalConditions">Medical Conditions / Allergies / Mobility <span class="req">*</span></label>
                 <textarea name="Guest1MedicalConditions" placeholder="Please describe any medical conditions, asthma, severe bee sting allergies, prescription medications, or mobility requirements…"></textarea>
               </div>
             </div>
 
             <!-- Guest 2 Medical -->
             <div class="med-guest-block" id="medBlock2" style="display:none; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-light);">
-              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;">Guest 2 Medical Safety</h4>
+              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;" id="lbl_medTitle2">Guest 2 Medical Safety</h4>
               <div class="field-group">
-                <label class="field-label">Does Guest 2 have any medical conditions, allergies, or mobility requirements?</label>
+                <label class="field-label" id="lbl_Guest2HasMed">Does Guest 2 have any medical conditions, allergies, or mobility requirements?</label>
                 <div class="options-grid" data-field="Guest2HasMed" data-type="radio">
                   <div class="option-card selected" onclick="window.KishindoApp.toggleMedBox(2, false)"><input type="radio" name="Guest2HasMed" value="No" checked><label class="option-card-label">No — no medical conditions or mobility needs</label></div>
                   <div class="option-card" onclick="window.KishindoApp.toggleMedBox(2, true)"><input type="radio" name="Guest2HasMed" value="Yes"><label class="option-card-label">Yes — has medical conditions or allergies to note</label></div>
                 </div>
               </div>
               <div class="field-group" id="medDetailBox2" style="display:none; margin-top:12px;">
-                <label class="field-label">Medical Conditions / Allergies / Mobility — Guest 2 <span class="req">*</span></label>
+                <label class="field-label" id="lbl_Guest2MedicalConditions">Medical Conditions / Allergies / Mobility — Guest 2 <span class="req">*</span></label>
                 <textarea name="Guest2MedicalConditions" placeholder="Please describe any medical conditions, asthma, severe allergies, or mobility requirements…"></textarea>
               </div>
             </div>
 
             <!-- Guest 3 Medical -->
             <div class="med-guest-block" id="medBlock3" style="display:none; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-light);">
-              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;">Guest 3 Medical Safety</h4>
+              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;" id="lbl_medTitle3">Guest 3 Medical Safety</h4>
               <div class="field-group">
-                <label class="field-label">Does Guest 3 have any medical conditions, allergies, or mobility requirements?</label>
+                <label class="field-label" id="lbl_Guest3HasMed">Does Guest 3 have any medical conditions, allergies, or mobility requirements?</label>
                 <div class="options-grid" data-field="Guest3HasMed" data-type="radio">
                   <div class="option-card selected" onclick="window.KishindoApp.toggleMedBox(3, false)"><input type="radio" name="Guest3HasMed" value="No" checked><label class="option-card-label">No — no medical conditions or mobility needs</label></div>
                   <div class="option-card" onclick="window.KishindoApp.toggleMedBox(3, true)"><input type="radio" name="Guest3HasMed" value="Yes"><label class="option-card-label">Yes — has medical conditions or allergies to note</label></div>
                 </div>
               </div>
               <div class="field-group" id="medDetailBox3" style="display:none; margin-top:12px;">
-                <label class="field-label">Medical Conditions / Allergies / Mobility — Guest 3 <span class="req">*</span></label>
+                <label class="field-label" id="lbl_Guest3MedicalConditions">Medical Conditions / Allergies / Mobility — Guest 3 <span class="req">*</span></label>
                 <textarea name="Guest3MedicalConditions" placeholder="Please describe any conditions…"></textarea>
               </div>
             </div>
 
             <!-- Guest 4 Medical -->
             <div class="med-guest-block" id="medBlock4" style="display:none; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-light);">
-              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;">Guest 4 Medical Safety</h4>
+              <h4 style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--brand-ochre); margin-bottom:10px;" id="lbl_medTitle4">Guest 4 Medical Safety</h4>
               <div class="field-group">
-                <label class="field-label">Does Guest 4 have any medical conditions, allergies, or mobility requirements?</label>
+                <label class="field-label" id="lbl_Guest4HasMed">Does Guest 4 have any medical conditions, allergies, or mobility requirements?</label>
                 <div class="options-grid" data-field="Guest4HasMed" data-type="radio">
                   <div class="option-card selected" onclick="window.KishindoApp.toggleMedBox(4, false)"><input type="radio" name="Guest4HasMed" value="No" checked><label class="option-card-label">No — no medical conditions or mobility needs</label></div>
                   <div class="option-card" onclick="window.KishindoApp.toggleMedBox(4, true)"><input type="radio" name="Guest4HasMed" value="Yes"><label class="option-card-label">Yes — has medical conditions or allergies to note</label></div>
                 </div>
               </div>
               <div class="field-group" id="medDetailBox4" style="display:none; margin-top:12px;">
-                <label class="field-label">Medical Conditions / Allergies / Mobility — Guest 4 <span class="req">*</span></label>
+                <label class="field-label" id="lbl_Guest4MedicalConditions">Medical Conditions / Allergies / Mobility — Guest 4 <span class="req">*</span></label>
                 <textarea name="Guest4MedicalConditions" placeholder="Please describe any conditions…"></textarea>
               </div>
             </div>
