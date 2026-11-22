@@ -355,21 +355,19 @@
 
   // ── 7. Multi-step Form Flow ──
   const ALL_SECTIONS = [
-    { id: 'sec-welcome', title: 'Welcome & Contact', stepNum: 'Step 1 of 12' },
-    { id: 'sec-stay', title: 'Dates of Stay', stepNum: 'Step 2 of 12' },
-    { id: 'sec-names', title: 'Guest Names & Visits', stepNum: 'Step 3 of 12' },
-    { id: 'sec-dob', title: 'Dates of Birth', stepNum: 'Step 4 of 12' },
-    { id: 'sec-nationality', title: 'Nationalities', stepNum: 'Step 5 of 12' },
-    { id: 'sec-room', title: 'Suite Configuration', stepNum: 'Step 6 of 12' },
-    { id: 'sec-diet-gate', title: 'Dining Preferences', stepNum: 'Step 7 of 12' },
-    { id: 'sec-diet-detail', title: 'Dietary Details', stepNum: 'Step 7b', conditional: () => State.formData.HasDietaryPreferences === 'Yes' },
-    { id: 'sec-med-gate', title: 'Medical Safety', stepNum: 'Step 8 of 12' },
-    { id: 'sec-med-detail', title: 'Medical Details', stepNum: 'Step 8b', conditional: () => State.formData.HasMedicalConditions === 'Yes' },
-    { id: 'sec-interests', title: 'Your Kishindo Experience', stepNum: 'Step 9 of 12' },
+    { id: 'sec-welcome', title: 'Welcome & Contact', stepNum: 'Step 1 of 11' },
+    { id: 'sec-stay', title: 'Dates of Stay', stepNum: 'Step 2 of 11' },
+    { id: 'sec-names', title: 'Guest Names & Visits', stepNum: 'Step 3 of 11' },
+    { id: 'sec-dob', title: 'Dates of Birth', stepNum: 'Step 4 of 11' },
+    { id: 'sec-nationality', title: 'Nationalities', stepNum: 'Step 5 of 11' },
+    { id: 'sec-room', title: 'Bed Configuration', stepNum: 'Step 6 of 11' },
+    { id: 'sec-diet', title: 'Dining & Bush Hospitality', stepNum: 'Step 7 of 11' },
+    { id: 'sec-med', title: 'Medical Care & Peace of Mind', stepNum: 'Step 8 of 11' },
+    { id: 'sec-interests', title: 'Your Kishindo Safari Experience', stepNum: 'Step 9 of 11' },
     { id: 'sec-celebrations', title: 'Celebrations & Special Requests', stepNum: 'Step 9b', conditional: () => (State.formData.ReasonsForStay || []).includes('A special occasion or celebration') },
-    { id: 'sec-transport', title: 'Journey & Arrival Times', stepNum: 'Step 10 of 12' },
-    { id: 'sec-contacts', title: 'Contact & Emergency Details', stepNum: 'Step 11 of 12' },
-    { id: 'sec-insurance', title: 'Travel Insurance', stepNum: 'Step 12 of 12' },
+    { id: 'sec-transport', title: 'Journey & Arrival Times', stepNum: 'Step 10 of 11' },
+    { id: 'sec-contacts', title: 'Contact & Emergency Details', stepNum: 'Step 11 of 11' },
+    { id: 'sec-insurance', title: 'Travel Insurance', stepNum: 'Security & Protection' },
     { id: 'sec-final', title: 'Final Details', stepNum: 'Final Note' }
   ];
 
@@ -453,10 +451,10 @@
       if (dob) dob.style.display = show ? "block" : "none";
       const nat = document.getElementById("natGroup" + i);
       if (nat) nat.style.display = show ? "block" : "none";
-      const diet = document.getElementById("dietGroup" + i);
-      if (diet) diet.style.display = show ? "block" : "none";
-      const med = document.getElementById("medGroup" + i);
-      if (med) med.style.display = show ? "block" : "none";
+      const dietBlock = document.getElementById("dietBlock" + i);
+      if (dietBlock) dietBlock.style.display = show ? "block" : "none";
+      const medBlock = document.getElementById("medBlock" + i);
+      if (medBlock) medBlock.style.display = show ? "block" : "none";
     });
 
     // Check suite capacity in Section 3
@@ -478,18 +476,40 @@
       if (g4Block) g4Block.style.display = "block";
     }
 
-    // Day bed notice on Step 6 (Bed Configuration)
+    // Bed Configuration: Show Guest 3 and Guest 4 bed options if active
+    const bed3Group = document.getElementById("bedConfigGroupGuest3");
+    if (bed3Group) bed3Group.style.display = (count >= 3 && suiteName !== "Zaria") ? "block" : "none";
+
+    const bed4Group = document.getElementById("bedConfigGroupGuest4");
+    if (bed4Group) bed4Group.style.display = (count >= 4 && suiteName === "Ussuri") ? "block" : "none";
+
+    // Day bed informative notice on Step 6
     const noticeBox = document.getElementById("dayBedNoticeBox");
     if (noticeBox) {
       if (count === 3) {
         noticeBox.style.display = "block";
-        noticeBox.innerHTML = "<strong>✨ Dedicated Day Bed Arrangement:</strong> Because 3 guests are staying in this suite, our team will automatically prepare <strong>1 dedicated day bed</strong> for your 3rd guest in addition to your selected main bed setup.";
+        noticeBox.innerHTML = "<strong>✨ Suite Bedding Overview:</strong> For your party of 3 guests, your suite will feature your selected primary bed configuration (King or Twin single beds) plus 1 dedicated luxury day bed for Guest 3.";
       } else if (count >= 4) {
         noticeBox.style.display = "block";
-        noticeBox.innerHTML = "<strong>✨ Dedicated Day Beds Arrangement:</strong> Because 4 guests are staying in this suite, our team will automatically prepare <strong>2 dedicated day beds</strong> for your 3rd and 4th guests in addition to your selected main bed setup.";
+        noticeBox.innerHTML = "<strong>✨ Suite Bedding Overview:</strong> For your party of 4 guests, your suite will feature your selected primary bed configuration (King or Twin single beds) plus 2 dedicated luxury day beds for Guests 3 and 4.";
       } else {
         noticeBox.style.display = "none";
       }
+    }
+
+    // Sync visit year toggles
+    for (let i = 1; i <= 4; i++) {
+      const isVisited = document.querySelector(`input[name="Guest${i}VisitedBefore"]:checked`)?.value || State.formData[`Guest${i}VisitedBefore`];
+      const vyGroup = document.getElementById(`visitYearGroup${i}`);
+      if (vyGroup) vyGroup.style.display = isVisited === "Yes" ? "block" : "none";
+
+      const hasDiet = document.querySelector(`input[name="Guest${i}HasDiet"]:checked`)?.value || State.formData[`Guest${i}HasDiet`];
+      const dietBox = document.getElementById(`dietDetailBox${i}`);
+      if (dietBox) dietBox.style.display = hasDiet === "Yes" ? "block" : "none";
+
+      const hasMed = document.querySelector(`input[name="Guest${i}HasMed"]:checked`)?.value || State.formData[`Guest${i}HasMed`];
+      const medBox = document.getElementById(`medDetailBox${i}`);
+      if (medBox) medBox.style.display = hasMed === "Yes" ? "block" : "none";
     }
   }
 
@@ -1504,6 +1524,31 @@ https://kishindowild.com/`;
     },
     closeNewBookingModal() {
       document.getElementById('newBookingModal').classList.remove('active');
+    },
+
+    toggleVisitYear(guestNum, show) {
+      const el = document.getElementById(`visitYearGroup${guestNum}`);
+      if (el) el.style.display = show ? "block" : "none";
+      if (!show) {
+        const inp = el?.querySelector("input");
+        if (inp) inp.value = "";
+      }
+    },
+    toggleDietBox(guestNum, show) {
+      const el = document.getElementById(`dietDetailBox${guestNum}`);
+      if (el) el.style.display = show ? "block" : "none";
+      if (!show) {
+        const txt = el?.querySelector("textarea");
+        if (txt) txt.value = "";
+      }
+    },
+    toggleMedBox(guestNum, show) {
+      const el = document.getElementById(`medDetailBox${guestNum}`);
+      if (el) el.style.display = show ? "block" : "none";
+      if (!show) {
+        const txt = el?.querySelector("textarea");
+        if (txt) txt.value = "";
+      }
     },
     toggleGuestBlock(guestNum, show) {
       const block = document.getElementById(`guestBlock${guestNum}`);
