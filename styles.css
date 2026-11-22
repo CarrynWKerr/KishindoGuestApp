@@ -674,9 +674,49 @@ textarea {
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.badge-pending  { background: var(--sand-header); color: var(--charcoal-dark); }
-.badge-partial  { background: rgba(211,114,51,0.14); color: var(--brand-ochre-dark); }
-.badge-complete { background: var(--olive-light); color: var(--olive-sage); }
+.badge-pending    { background: var(--sand-header); color: var(--charcoal-dark); }
+.badge-partial    { background: rgba(211,114,51,0.14); color: var(--brand-ochre-dark); }
+.badge-complete   { background: var(--olive-light); color: var(--olive-sage); }
+.badge-cancelled  { background: #E8E5DF; color: #7A756D; border: 1px solid #D1CBC0; }
+.badge-provisional{ background: #FFF4EC; color: #D37233; border: 1px solid #F5C6A5; }
+.badge-confirmed  { background: #F0F4ED; color: #4C6B38; border: 1px solid #C7D8BE; }
+.badge-ready      { background: #EBF3F5; color: #2D6A78; border: 1px solid #BCD3D9; }
+
+.form-top-nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0 14px;
+  margin-bottom: 6px;
+}
+
+.form-step-badge {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brand-ochre);
+}
+
+.dropzone-box {
+  border: 2px dashed var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  text-align: center;
+  background: var(--sand-light);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 16px;
+}
+.dropzone-box:hover, .dropzone-box.dragover {
+  border-color: var(--brand-ochre);
+  background: var(--brand-ochre-soft);
+}
+
+.alert-box {
+  border-radius: var(--radius-sm);
+  line-height: 1.5;
+}
 
 .booking-item-card {
   background: var(--bg-white);

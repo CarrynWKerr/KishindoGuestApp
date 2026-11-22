@@ -21,6 +21,7 @@
   <!-- Firebase SDK (v10 Compat for static hosting without bundlers) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="firebase-config.js"></script>
 </head>
 <body>
@@ -35,6 +36,7 @@
         <img src="kishindo-logo.png" alt="Kishindo Conservation Reserve" class="header-logo-img">
       </div>
       <div class="header-actions">
+        <button id="headerLogoutBtn" class="btn btn-outline btn-sm no-print" onclick="window.KishindoApp.logout()" style="display:none;margin-right:8px;">Log Out</button>
         <a href="https://kishindowild.com/" target="_blank" class="btn btn-outline btn-sm no-print">Website</a>
       </div>
     </div>
@@ -49,7 +51,7 @@
         <img src="kishindo-logo.png" alt="Kishindo Conservation Reserve" class="auth-logo-img">
         <h1 class="auth-title">Welcome to Kishindo</h1>
         <p class="auth-subquote">
-          “Where safari feels different in the best way. Guided by ethical, responsible tourism, every stay is an unforgettable journey through conservation, community, and wild open spaces.”
+          “A magical adventure into the hidden world of Kishindo Conservation Reserve — an untamed sanctuary reserved for only a select few.”
         </p>
 
         <div class="auth-tabs">
@@ -73,6 +75,9 @@
           </div>
           <div id="guestPinError" class="error-banner"></div>
           <button class="btn btn-ochre btn-full" onclick="window.KishindoApp.handleGuestLogin()">Unlock My Pre-Arrival Form</button>
+          <p style="font-size: 11px; color: var(--charcoal-muted); margin-top: 18px;">
+            Demo Suite PIN for testing: <strong style="color:var(--brand-ochre);">4821</strong> (Suite Ussuri)
+          </p>
         </div>
       </div>
 
@@ -91,6 +96,9 @@
           </div>
           <div id="staffPinError" class="error-banner"></div>
           <button class="btn btn-primary btn-full" onclick="window.KishindoApp.handleStaffLogin()">Access Lodge Operations</button>
+          <p style="font-size: 11px; color: var(--charcoal-muted); margin-top: 18px;">
+            Lodge Anchor Master Access: <strong style="color:var(--brand-ochre);">9999</strong>
+          </p>
         </div>
       </div>
 
@@ -169,14 +177,15 @@
   <main id="guestFormScreen" class="screen">
     <div class="content-wrap" style="max-width: 720px;">
       
-      <!-- Progress Bar -->
+      <!-- Progress Bar & Top Navigation -->
       <div class="form-progress-wrap">
+        <div class="form-top-nav-bar">
+          <button type="button" class="btn btn-outline btn-sm" onclick="window.KishindoApp.prevFormStep()">← Back</button>
+          <span id="formProgressText" class="form-step-badge">Step 1 of 12 — Welcome</span>
+          <span id="autosavePill" class="autosave-pill">Autosaving…</span>
+        </div>
         <div class="progress-track">
           <div id="formProgressFill" class="progress-fill"></div>
-        </div>
-        <div class="progress-status-bar">
-          <span id="formProgressText">Step 1 of 12 — Welcome</span>
-          <span id="autosavePill" class="autosave-pill">Autosaving…</span>
         </div>
       </div>
 
@@ -206,17 +215,15 @@
             <div class="step-header">
               <div class="step-number">Section 2 of 17</div>
               <h2 class="step-title">Dates of Stay</h2>
-              <p class="step-lead">Please confirm your planned check-in and check-out dates.</p>
+              <p class="step-lead">When shall we welcome you to camp? Please confirm your planned dates of stay.</p>
             </div>
-            <div class="field-row-2">
-              <div class="field-group">
-                <label class="field-label">Check-in Date <span class="req">*</span></label>
-                <input type="date" name="CheckInDate" required>
-              </div>
-              <div class="field-group">
-                <label class="field-label">Check-out Date <span class="req">*</span></label>
-                <input type="date" name="CheckOutDate" required>
-              </div>
+            <div class="field-group">
+              <label class="field-label">Check-in Date <span class="req">*</span></label>
+              <input type="date" name="CheckInDate" required>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Check-out Date <span class="req">*</span></label>
+              <input type="date" name="CheckOutDate" required>
             </div>
           </div>
 
@@ -342,27 +349,23 @@
             <div class="step-header">
               <div class="step-number">Section 4 of 17</div>
               <h2 class="step-title">Guest Birth Dates</h2>
-              <p class="step-lead">Required for lodge medical register and reserve permit requirements.</p>
+              <p class="step-lead">We would love to know your date of birth so our lodge team can celebrate special milestones and birthdays with you during your stay.</p>
             </div>
-            <div class="field-row-2">
-              <div class="field-group">
-                <label class="field-label">Date of Birth — Guest 1</label>
-                <input type="date" name="Guest1DOB">
-              </div>
-              <div class="field-group" id="dobGroup2">
-                <label class="field-label">Date of Birth — Guest 2</label>
-                <input type="date" name="Guest2DOB">
-              </div>
+            <div class="field-group" id="dobGroup1">
+              <label class="field-label">Date of Birth — Primary Guest (Guest 1)</label>
+              <input type="date" name="Guest1DOB">
             </div>
-            <div class="field-row-2" style="margin-top:12px;">
-              <div class="field-group" id="dobGroup3" style="display:none;">
-                <label class="field-label">Date of Birth — Guest 3</label>
-                <input type="date" name="Guest3DOB">
-              </div>
-              <div class="field-group" id="dobGroup4" style="display:none;">
-                <label class="field-label">Date of Birth — Guest 4</label>
-                <input type="date" name="Guest4DOB">
-              </div>
+            <div class="field-group" id="dobGroup2" style="display:none;">
+              <label class="field-label">Date of Birth — Guest 2</label>
+              <input type="date" name="Guest2DOB">
+            </div>
+            <div class="field-group" id="dobGroup3" style="display:none;">
+              <label class="field-label">Date of Birth — Guest 3</label>
+              <input type="date" name="Guest3DOB">
+            </div>
+            <div class="field-group" id="dobGroup4" style="display:none;">
+              <label class="field-label">Date of Birth — Guest 4</label>
+              <input type="date" name="Guest4DOB">
             </div>
           </div>
 
@@ -371,27 +374,23 @@
             <div class="step-header">
               <div class="step-number">Section 5 of 17</div>
               <h2 class="step-title">Guest Nationalities</h2>
-              <p class="step-lead">Required for South African hospitality and tourism registry.</p>
+              <p class="step-lead">Helps our lodge team tailor your stay and hospitality, welcoming guests from all around the world into our hidden reserve.</p>
             </div>
-            <div class="field-row-2">
-              <div class="field-group">
-                <label class="field-label">Nationality — Guest 1</label>
-                <input type="text" name="Guest1Nationality" placeholder="e.g. British, South African">
-              </div>
-              <div class="field-group" id="natGroup2">
-                <label class="field-label">Nationality — Guest 2</label>
-                <input type="text" name="Guest2Nationality" placeholder="e.g. British, South African">
-              </div>
+            <div class="field-group" id="natGroup1">
+              <label class="field-label">Nationality — Primary Guest (Guest 1)</label>
+              <input type="text" name="Guest1Nationality" placeholder="e.g. British, South African, German">
             </div>
-            <div class="field-row-2" style="margin-top:12px;">
-              <div class="field-group" id="natGroup3" style="display:none;">
-                <label class="field-label">Nationality — Guest 3</label>
-                <input type="text" name="Guest3Nationality" placeholder="e.g. British, South African">
-              </div>
-              <div class="field-group" id="natGroup4" style="display:none;">
-                <label class="field-label">Nationality — Guest 4</label>
-                <input type="text" name="Guest4Nationality" placeholder="e.g. British, South African">
-              </div>
+            <div class="field-group" id="natGroup2" style="display:none;">
+              <label class="field-label">Nationality — Guest 2</label>
+              <input type="text" name="Guest2Nationality" placeholder="e.g. British, South African, German">
+            </div>
+            <div class="field-group" id="natGroup3" style="display:none;">
+              <label class="field-label">Nationality — Guest 3</label>
+              <input type="text" name="Guest3Nationality" placeholder="e.g. British, South African, German">
+            </div>
+            <div class="field-group" id="natGroup4" style="display:none;">
+              <label class="field-label">Nationality — Guest 4</label>
+              <input type="text" name="Guest4Nationality" placeholder="e.g. British, South African, German">
             </div>
           </div>
 
@@ -405,10 +404,10 @@
             <div class="field-group">
               <div class="options-grid" data-field="RoomConfiguration" data-type="radio">
                 <div class="option-card selected"><input type="radio" name="RoomConfiguration" value="King Bed" checked><label class="option-card-label">Generous King Bed</label></div>
-                <div class="option-card"><input type="radio" name="RoomConfiguration" value="Twin Beds"><label class="option-card-label">Two Separate Twin Beds</label></div>
-                <div class="option-card"><input type="radio" name="RoomConfiguration" value="Day Visitors"><label class="option-card-label">Day Visitors</label></div>
+                <div class="option-card"><input type="radio" name="RoomConfiguration" value="Twin Beds"><label class="option-card-label">Two Twin Single Beds</label></div>
               </div>
             </div>
+            <div id="dayBedNoticeBox" class="alert-box" style="display:none;margin-top:16px;background:var(--sand-light);padding:14px 18px;border-left:3px solid var(--brand-ochre);font-size:13px;color:var(--charcoal-dark);"></div>
           </div>
 
           <!-- ── Section 7: Dietary Preferences Gate ── -->
@@ -740,10 +739,12 @@
             <h1 style="font-size: 22px; letter-spacing: 0.14em;">Kishindo Lodge Operations</h1>
             <p style="font-size: 12px; color: var(--charcoal-muted);">Real-time guest pre-arrival registry, rooming lists, and email dispatcher</p>
           </div>
-          <div class="dashboard-actions-group">
+          <div class="dashboard-actions-group" style="flex-wrap:wrap;">
             <button class="btn btn-ochre btn-sm" onclick="window.KishindoApp.openNewBookingModal()">+ New Booking</button>
-            <button class="btn btn-primary btn-sm" onclick="window.KishindoApp.downloadCSV()">📊 Download Database to Excel</button>
+            <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.openNightsBridgeModal()">📥 Import NightsBridge</button>
+            <button class="btn btn-primary btn-sm" onclick="window.KishindoApp.downloadMultiSheetExcel()">📊 Download Excel (Multi-Sheet)</button>
             <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.downloadJSON()">⬇ Backup JSON</button>
+            <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.logout()">Log Out</button>
           </div>
         </div>
 
@@ -756,9 +757,16 @@
         <button class="btn btn-outline btn-sm" style="margin-bottom: 20px;" onclick="window.KishindoApp.closeBookingDetail()">← Back to All Bookings</button>
         
         <div class="card-white" style="margin-bottom: 24px;">
-          <div class="banner-card" style="display:flex; justify-content:space-between; align-items:center;">
-            <span id="detailNbidTitle">Booking NBID</span>
-            <button class="btn btn-primary btn-sm no-print" onclick="window.KishindoApp.printDocument()">🖨 Print This PDF</button>
+          <div class="banner-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span id="detailNbidTitle">Booking NBID</span>
+              <span id="detailStageBadge"></span>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-outline btn-sm no-print" onclick="window.KishindoApp.openEditBookingModal()">✏️ Edit Booking</button>
+              <button id="cancelBookingActionBtn" class="btn btn-outline btn-sm no-print" onclick="window.KishindoApp.toggleCancelCurrentBooking()">🚫 Cancel Booking</button>
+              <button class="btn btn-primary btn-sm no-print" onclick="window.KishindoApp.printDocument()">🖨 Print This PDF</button>
+            </div>
           </div>
           <div class="card-body">
             <p id="detailStayInfo" style="font-size:14px; color:var(--charcoal-muted); margin-bottom: 24px;"></p>
@@ -958,5 +966,192 @@
 
   <!-- Application Logic -->
   <script src="app.js"></script>
+  <!-- ══════════════════════════════════════════════════════════════
+       MODAL: EDIT EXISTING BOOKING (Lodge Anchor)
+       ══════════════════════════════════════════════════════════════ -->
+  <div id="editBookingModal" class="modal-overlay">
+    <div class="modal-window">
+      <div class="modal-header">
+        <span style="font-size:12px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;">Edit Reservation</span>
+        <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.closeEditBookingModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="eb_nbid">
+
+        <div class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">Contact / Lead Name <span class="req">*</span></label>
+            <input type="text" id="eb_contact" required>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Contact Email</label>
+            <input type="email" id="eb_email">
+          </div>
+        </div>
+
+        <div class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">Check-in Date <span class="req">*</span></label>
+            <input type="date" id="eb_checkin" required>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Check-out Date <span class="req">*</span></label>
+            <input type="date" id="eb_checkout" required>
+          </div>
+        </div>
+
+        <div class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">Booking Type</label>
+            <select id="eb_type">
+              <option value="Agent">Agent / DMC / Tour Operator</option>
+              <option value="Direct">Direct Guest</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Booking Stage</label>
+            <select id="eb_stage">
+              <option value="Provisional">Provisional (Awaiting Deposit)</option>
+              <option value="Confirmed">Confirmed (Deposit Received)</option>
+              <option value="Sanctuary Ready">Sanctuary Ready (Balance Cleared)</option>
+              <option value="Cancelled">Cancelled (Noted / Inactive)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Guest Count (Pax)</label>
+          <input type="number" id="eb_guests" min="1" max="6">
+        </div>
+
+        <!-- Suite Allocations -->
+        <div style="margin: 20px 0 12px; padding-top: 16px; border-top: 1px solid var(--border-light); font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brand-ochre);">
+          Assigned Suites & Custom PINs
+        </div>
+
+        <div class="field-row-2" style="margin-bottom: 10px;">
+          <div>
+            <label class="field-label">Room 1 (Suite 1: Tibo - Max 3)</label>
+            <select id="eb_suite_1">
+              <option value="">— None —</option>
+              <option value="Tibo">Tibo (Suite 1 - Max 3)</option>
+              <option value="Ussuri">Ussuri (Suite 2 - Max 4)</option>
+              <option value="Zaria">Zaria (Suite 3 - Max 2)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <label class="field-label">Bed Setup</label>
+              <select id="eb_bed_1">
+                <option value="King Bed">King Bed</option>
+                <option value="Twin Beds">Two Twin Single Beds</option>
+                <option value="— None —">— None —</option>
+              </select>
+            </div>
+            <div style="width:90px;">
+              <label class="field-label">PIN</label>
+              <input type="text" id="eb_pin_1" maxlength="4" style="text-align:center;font-weight:600;letter-spacing:0.1em;">
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row-2" style="margin-bottom: 10px;">
+          <div>
+            <label class="field-label">Room 2 (Suite 2: Ussuri - Max 4)</label>
+            <select id="eb_suite_2">
+              <option value="">— None —</option>
+              <option value="Tibo">Tibo (Suite 1 - Max 3)</option>
+              <option value="Ussuri">Ussuri (Suite 2 - Max 4)</option>
+              <option value="Zaria">Zaria (Suite 3 - Max 2)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <label class="field-label">Bed Setup</label>
+              <select id="eb_bed_2">
+                <option value="King Bed">King Bed</option>
+                <option value="Twin Beds">Two Twin Single Beds</option>
+                <option value="— None —">— None —</option>
+              </select>
+            </div>
+            <div style="width:90px;">
+              <label class="field-label">PIN</label>
+              <input type="text" id="eb_pin_2" maxlength="4" style="text-align:center;font-weight:600;letter-spacing:0.1em;">
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row-2" style="margin-bottom: 16px;">
+          <div>
+            <label class="field-label">Room 3 (Suite 3: Zaria - Max 2)</label>
+            <select id="eb_suite_3">
+              <option value="">— None —</option>
+              <option value="Tibo">Tibo (Suite 1 - Max 3)</option>
+              <option value="Ussuri">Ussuri (Suite 2 - Max 4)</option>
+              <option value="Zaria">Zaria (Suite 3 - Max 2)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <label class="field-label">Bed Setup</label>
+              <select id="eb_bed_3">
+                <option value="King Bed">King Bed</option>
+                <option value="Twin Beds">Two Twin Single Beds</option>
+                <option value="— None —">— None —</option>
+              </select>
+            </div>
+            <div style="width:90px;">
+              <label class="field-label">PIN</label>
+              <input type="text" id="eb_pin_3" maxlength="4" style="text-align:center;font-weight:600;letter-spacing:0.1em;">
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:24px; padding-top:16px; border-top:1px solid var(--border-light);">
+          <button type="button" id="eb_cancel_toggle_btn" class="btn btn-outline btn-sm" onclick="window.KishindoApp.toggleCancelBooking()">🚫 Cancel Booking</button>
+          <div style="display:flex; gap:10px;">
+            <button type="button" class="btn btn-outline" onclick="window.KishindoApp.closeEditBookingModal()">Close</button>
+            <button type="button" class="btn btn-ochre" onclick="window.KishindoApp.submitEditBooking()">Save Changes</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       MODAL: NIGHTSBRIDGE BULK IMPORT (Lodge Anchor)
+       ══════════════════════════════════════════════════════════════ -->
+  <div id="nightsBridgeModal" class="modal-overlay">
+    <div class="modal-window">
+      <div class="modal-header">
+        <span style="font-size:12px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;">Import NightsBridge Bookings</span>
+        <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.closeNightsBridgeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px; color:var(--charcoal-muted); margin-bottom:16px;">
+          Import past or upcoming reservations directly from your NightsBridge booking summary sheet without manual entry.
+        </p>
+
+        <div class="dropzone-box" onclick="document.getElementById(nb_file_input).click()">
+          <input type="file" id="nb_file_input" accept=".csv,text/csv" style="display:none;" onchange="window.KishindoApp.handleNightsBridgeFileInput(event)">
+          <div style="font-size:24px; margin-bottom:6px;">📁</div>
+          <div style="font-size:13px; font-weight:600; color:var(--charcoal-black);">Click to upload NightsBridge CSV</div>
+          <div style="font-size:11px; color:var(--charcoal-muted); margin-top:4px;">or paste booking summary text below</div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">CSV Data / Booking Summary Text</label>
+          <textarea id="nb_csv_textarea" placeholder="Booking Number,Guest Name,Arrival,Departure,Room,Pax,Status,Agent..." style="min-height:120px; font-family:monospace; font-size:12px;"></textarea>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+          <button class="btn btn-outline" onclick="window.KishindoApp.closeNightsBridgeModal()">Cancel</button>
+          <button class="btn btn-ochre" onclick="window.KishindoApp.processNightsBridgeImport()">Import Bookings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
