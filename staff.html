@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kishindo – Lodge Anchor (Staff)</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-link" onclick="window.KishindoApp.logout()">
+        <img src="kishindo-logo.png" alt="Kishindo Conservation Reserve" class="header-logo-img">
+      </div>
+      <div class="header-actions">
+        <button id="headerLogoutBtn" class="btn btn-outline btn-sm" onclick="window.KishindoApp.logout()" style="display:none;margin-right:8px;">Log Out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Staff authentication – email / password -->
+  <main id="staffAuthScreen" class="screen active" style="max-width:540px;margin:auto;padding:40px;">
+    <h1 class="auth-title">Lodge Anchor Login</h1>
+    <div class="field-group">
+      <label class="field-label">Email</label>
+      <input type="email" id="staffEmail" placeholder="you@domain.com" required>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Password</label>
+      <input type="password" id="staffPassword" placeholder="Password" required>
+    </div>
+    <div id="staffAuthError" class="error-banner"></div>
+    <button class="btn btn-primary btn-full" onclick="window.KishindoApp.handleStaffLoginEmail()">Sign In</button>
+  </main>
+
+  <!-- Staff dashboard – reuse existing markup (IDs must match) -->
+  <div id="staffDashboardScreen" class="screen" style="display:none;">
+    <div id="staffDashboardMain">
+      <h2>Bookings</h2>
+      <div id="staffBookingsList"></div>
+    </div>
+    <div id="staffBookingDetail" style="display:none;">
+      <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.closeBookingDetail()">← Back</button>
+      <h3 id="detailNbidTitle"></h3>
+      <span id="detailStageBadge" class="badge-status"></span>
+      <p id="detailStayInfo"></p>
+      <button id="cancelBookingActionBtn" class="btn btn-outline btn-sm" onclick="window.KishindoApp.toggleCancelBooking()"></button>
+      <button id="deleteBookingBtn" class="btn btn-danger btn-sm" style="display:none;margin-left:12px;" onclick="window.KishindoApp.deleteBookingAction()">🗑️ Delete Booking</button>
+      <pre id="opsSummaryOutput"></pre>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Replace classic PIN login with Firebase Auth for staff page
+    window.KishindoApp.handleStaffLoginEmail = async function () {
+      const email = document.getElementById('staffEmail').value.trim();
+      const pw = document.getElementById('staffPassword').value;
+      const errEl = document.getElementById('staffAuthError');
+      errEl.textContent = '';
+      try {
+        const cred = await firebase.auth().signInWithEmailAndPassword(email, pw);
+        const tokenResult = await cred.user.getIdTokenResult();
+        const role = tokenResult.claims.role || 'staff';
+        window.KishindoApp.currentStaffRole = role;
+        await window.KishindoApp.loadStaffDashboard();
+        window.KishindoApp.showScreen('staffDashboardScreen');
+      } catch (e) {
+        errEl.textContent = e.message || 'Login failed';
+      }
+    };
+    // Helper for DataStore to expose current role (used for admin‑only UI)
+    DataStore.getUserRole = async () => window.KishindoApp.currentStaffRole || 'staff';
+  </script>
+</body>
+</html>

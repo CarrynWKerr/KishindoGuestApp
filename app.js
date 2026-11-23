@@ -22,7 +22,15 @@
       amenities: ['Outdoor & indoor shower', 'En-suite bath', 'Fireplace & gas heater', 'Air cooler', 'Wi-Fi & safe', 'Interleading door to Zaria'],
       description: 'Perched over the canyon rim with a dramatic overhanging balcony, outdoor stone shower, daybed lounge, and optional interleading door to Zaria.'
     },
-    'Zaria': {
+
+    'Guide': {
+      title: 'Guide (Suite 4)',
+      occupancy: 2,
+      highlights: 'Work desk, private patio, quiet lounge',
+      amenities: ['Desk', 'Wi‑Fi', 'Coffee maker', 'Mini fridge'],
+      description: 'A quiet suite for the primary guide, with space to review photos and plan routes.'
+    }
+
       title: 'Zaria (Suite 3)',
       occupancy: 2,
       highlights: 'Private rockery, canyon overhang, outdoor & indoor shower',
