@@ -264,8 +264,7 @@
       // Seed default accounts for quick setup
       const defaultUsers = [
         { name: 'Lodge Administrator', email: 'admin@kishindo.com', role: 'admin', createdAt: '2026-01-01T00:00:00.000Z' },
-        { name: 'Lodge Anchor', email: 'anchor@kishindo.com', role: 'anchor', createdAt: '2026-01-01T00:00:00.000Z' },
-        { name: 'Lead Field Guide', email: 'guide@kishindo.com', role: 'guide', createdAt: '2026-01-01T00:00:00.000Z' }
+        { name: 'Lodge Anchor', email: 'anchor@kishindo.com', role: 'anchor', createdAt: '2026-01-01T00:00:00.000Z' }
       ];
       localStorage.setItem('kishindo_staff_users', JSON.stringify(defaultUsers));
       return defaultUsers;
@@ -1660,6 +1659,8 @@ https://kishindowild.com/`;
 
     const existingBookings = await DataStore.getBookings();
     let importedCount = 0;
+    let skippedCount = 0;
+    const seenInBatch = new Set();
 
     for (let i = 1; i < lines.length; i++) {
       const cols = parseCSVLine(lines[i]);
@@ -1667,6 +1668,20 @@ https://kishindowild.com/`;
 
       const rawNbid = nbidIdx !== -1 ? cols[nbidIdx] : "";
       const nbid = rawNbid ? rawNbid.replace(/[^0-9]/g, "") : String(100000000 + Math.floor(Math.random() * 900000000));
+      
+      // Skip duplicate within the same batch or if already in the system
+      if (seenInBatch.has(String(nbid))) {
+        skippedCount++;
+        continue;
+      }
+      seenInBatch.add(String(nbid));
+
+      const existingIdx = existingBookings.findIndex(b => String(b.nbid) === String(nbid));
+      if (existingIdx !== -1) {
+        skippedCount++;
+        continue; // Skip duplicate completely
+      }
+
       const contactName = nameIdx !== -1 ? cols[nameIdx] : "Valued Guest";
       const contactEmail = emailIdx !== -1 ? cols[emailIdx] : "";
       const checkInRaw = checkinIdx !== -1 ? cols[checkinIdx] : "";
@@ -1708,13 +1723,9 @@ https://kishindowild.com/`;
       else if (/paid|settled|cleared/i.test(rawStatus)) stage = "Sanctuary Ready";
 
       const bookingType = agentRaw && !/direct|website/i.test(agentRaw) ? "Agent" : "Direct";
-
-      const existingIdx = existingBookings.findIndex(b => String(b.nbid) === String(nbid));
-      const existing = existingIdx !== -1 ? existingBookings[existingIdx] : null;
-
-      const pin = existing?.suites?.[0]?.pin || String(Math.floor(1000 + Math.random() * 9000));
+      const pin = String(Math.floor(1000 + Math.random() * 9000));
       const suites = [
-        { name: suiteName, pin, bedConfig: "King Bed", status: existing?.suites?.[0]?.status || "Pending" }
+        { name: suiteName, pin, bedConfig: "King Bed", status: "Pending" }
       ];
 
       const record = {
@@ -1734,22 +1745,19 @@ https://kishindowild.com/`;
         depositDue: new Date().toISOString().split("T")[0],
         balanceDue: checkIn,
         notes: `Imported from NightsBridge (${agentRaw || "Direct"})`,
-        createdAt: existing?.createdAt || new Date().toISOString(),
+        createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 
-      if (existingIdx !== -1) {
-        existingBookings[existingIdx] = { ...existingBookings[existingIdx], ...record };
-      } else {
-        existingBookings.push(record);
-      }
+      existingBookings.push(record);
+      await DataStore.saveBooking(record);
       importedCount++;
     }
 
     localStorage.setItem("kishindo_bookings", JSON.stringify(existingBookings));
     await loadStaffDashboard();
     closeNightsBridgeModal();
-    alert(`Successfully imported ${importedCount} reservation records from NightsBridge!`);
+    alert(`NightsBridge Import Complete:\n• ${importedCount} new reservation(s) imported\n• ${skippedCount} duplicate(s) skipped`);
   }
 
   window.KishindoApp = {
@@ -1919,8 +1927,8 @@ https://kishindowild.com/`;
           </thead>
           <tbody>
             ${users.map(u => {
-              const roleBadgeClass = u.role === 'admin' ? 'badge-confirmed' : u.role === 'guide' ? 'badge-ready' : 'badge-partial';
-              const roleName = u.role === 'admin' ? '👑 Admin' : u.role === 'guide' ? '🧭 Guide' : '⚓ Anchor';
+              const roleBadgeClass = u.role === 'admin' ? 'badge-confirmed' : 'badge-partial';
+              const roleName = u.role === 'admin' ? '👑 Admin' : '⚓ Anchor';
               const isSelf = u.email.toLowerCase() === currentEmail;
               return `
                 <tr style="border-bottom:1px solid rgba(0,0,0,0.05);">
@@ -2049,8 +2057,8 @@ https://kishindowild.com/`;
       // Update UI role badge
       const rolePill = document.getElementById('staffUserRolePill');
       if (rolePill) {
-        rolePill.textContent = `${role === 'admin' ? '👑 Admin' : role === 'guide' ? '🧭 Guide' : '⚓ Anchor'}: ${displayName}`;
-        rolePill.className = `badge-status ${role === 'admin' ? 'badge-confirmed' : role === 'guide' ? 'badge-ready' : 'badge-partial'}`;
+        rolePill.textContent = `${role === 'admin' ? '👑 Admin' : '⚓ Anchor'}: ${displayName}`;
+        rolePill.className = `badge-status ${role === 'admin' ? 'badge-confirmed' : 'badge-partial'}`;
         rolePill.style.display = 'inline-block';
       }
 
