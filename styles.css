@@ -168,6 +168,17 @@ h1, h2, h3, h4 {
   background: var(--bg-white);
 }
 
+.btn-danger {
+  background: #A83232;
+  color: #FFFFFF;
+  border-color: #A83232;
+}
+.btn-danger:hover {
+  background: #872020;
+  border-color: #872020;
+  color: #FFFFFF;
+}
+
 .btn-sm {
   padding: 8px 16px;
   font-size: 10px;

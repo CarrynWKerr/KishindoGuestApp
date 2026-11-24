@@ -2,79 +2,669 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kishindo – Lodge Anchor (Staff)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Kishindo Conservation Reserve — Lodge Anchor Portal</title>
+  
+  <!-- Favicon / Brand App Icons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=2">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=2">
+  <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2">
+  <link rel="shortcut icon" type="image/x-icon" href="favicon.ico?v=2">
+  <link rel="manifest" href="site.webmanifest?v=2">
+  <meta name="theme-color" content="#FAF9F6">
+  <meta name="description" content="Kishindo Conservation Reserve — Lodge Anchor Operations & Administration">
+
+  <!-- Stylesheet -->
   <link rel="stylesheet" href="styles.css">
+
+  <!-- Firebase SDK & SheetJS -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="firebase-config.js"></script>
+  <script src="common/SUITE_SPECS.js"></script>
 </head>
 <body>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       APPLICATION HEADER
+       ══════════════════════════════════════════════════════════════ -->
   <header class="app-header">
     <div class="header-inner">
       <div class="brand-link" onclick="window.KishindoApp.logout()">
         <img src="kishindo-logo.png" alt="Kishindo Conservation Reserve" class="header-logo-img">
       </div>
-      <div class="header-actions">
-        <button id="headerLogoutBtn" class="btn btn-outline btn-sm" onclick="window.KishindoApp.logout()" style="display:none;margin-right:8px;">Log Out</button>
+      <div class="header-actions" style="display:flex;align-items:center;gap:10px;">
+        <span id="staffUserRolePill" class="badge-status badge-ready" style="display:none;font-size:11px;font-weight:600;padding:4px 12px;"></span>
+        <button id="headerLogoutBtn" class="btn btn-outline btn-sm no-print" onclick="window.KishindoApp.logout()" style="display:none;">Log Out</button>
+        <a href="https://kishindowild.com/" target="_blank" class="btn btn-outline btn-sm no-print">Website</a>
       </div>
     </div>
   </header>
 
-  <!-- Staff authentication – email / password -->
-  <main id="staffAuthScreen" class="screen active" style="max-width:540px;margin:auto;padding:40px;">
-    <h1 class="auth-title">Lodge Anchor Login</h1>
-    <div class="field-group">
-      <label class="field-label">Email</label>
-      <input type="email" id="staffEmail" placeholder="you@domain.com" required>
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 1: STAFF & ADMIN AUTHENTICATION
+       ══════════════════════════════════════════════════════════════ -->
+  <main id="staffAuthScreen" class="screen active">
+    <div class="content-wrap" style="max-width: 500px; margin-top: 50px;">
+      <div class="auth-hero" style="text-align:center;margin-bottom:28px;">
+        <img src="kishindo-logo.png" alt="Kishindo Conservation Reserve" class="auth-logo-img">
+        <h1 class="auth-title">Lodge Anchor Portal</h1>
+        <p class="auth-subquote">
+          Operations, reservations management & guest arrival registry.
+        </p>
+      </div>
+
+      <div class="card-white" style="box-shadow: var(--shadow-elevated);">
+        <div class="banner-card" style="text-align: center;">Sign In to Operations</div>
+        <div class="card-body" style="padding: 32px 36px;">
+          <form onsubmit="event.preventDefault(); window.KishindoApp.handleStaffLoginEmail();">
+            <div class="field-group">
+              <label class="field-label">Email Address <span class="req">*</span></label>
+              <input type="email" id="staffEmail" placeholder="your-email@kishindo.com" required autocomplete="username" autofocus>
+            </div>
+            <div class="field-group" style="margin-top: 18px;">
+              <label class="field-label">Password <span class="req">*</span></label>
+              <input type="password" id="staffPassword" placeholder="••••••••" required autocomplete="current-password">
+            </div>
+            <div id="staffAuthError" class="error-banner" style="margin-top:14px;"></div>
+            <button type="submit" class="btn btn-primary btn-full" style="margin-top: 22px;">Access Lodge Operations →</button>
+          </form>
+        </div>
+      </div>
+
+      <div style="text-align:center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-light); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--charcoal-muted);">
+        ATTA · Cheetah Metapopulation Initiative · SATSA · Endangered Wildlife Trust
+      </div>
     </div>
-    <div class="field-group">
-      <label class="field-label">Password</label>
-      <input type="password" id="staffPassword" placeholder="Password" required>
-    </div>
-    <div id="staffAuthError" class="error-banner"></div>
-    <button class="btn btn-primary btn-full" onclick="window.KishindoApp.handleStaffLoginEmail()">Sign In</button>
   </main>
 
-  <!-- Staff dashboard – reuse existing markup (IDs must match) -->
-  <div id="staffDashboardScreen" class="screen" style="display:none;">
-    <div id="staffDashboardMain">
-      <h2>Bookings</h2>
-      <div id="staffBookingsList"></div>
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 2: LODGE OPERATIONS DASHBOARD
+       ══════════════════════════════════════════════════════════════ -->
+  <main id="staffDashboardScreen" class="screen" style="display:none;">
+    <div class="content-wrap" style="max-width: 980px;">
+      
+      <!-- Top Overview Bar -->
+      <div id="staffDashboardMain">
+        <div class="dashboard-controls" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:28px;">
+          <div>
+            <h1 style="font-size: 22px; letter-spacing: 0.14em; margin:0;">Kishindo Lodge Operations</h1>
+            <p style="font-size: 12px; color: var(--charcoal-muted); margin:4px 0 0;">Real-time guest pre-arrival registry, rooming lists, and email dispatcher</p>
+          </div>
+          <div class="dashboard-actions-group" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-ochre btn-sm" onclick="window.KishindoApp.openNewBookingModal()">+ New Booking</button>
+            <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.openNightsBridgeModal()">📥 Import NightsBridge</button>
+            <button class="btn btn-primary btn-sm" onclick="window.KishindoApp.downloadMultiSheetExcel()">📊 Download Excel</button>
+            <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.downloadJSON()">⬇ Backup JSON</button>
+            <button id="manageTeamBtn" class="btn btn-outline btn-sm" style="display:none;border-color:var(--brand-ochre);color:var(--brand-ochre);" onclick="window.KishindoApp.openManageTeamModal()">👥 Manage Team</button>
+          </div>
+        </div>
+
+        <!-- Bookings List -->
+        <div id="staffBookingsList"></div>
+      </div>
+
+      <!-- Single Booking Detail View (When Clicked) -->
+      <div id="staffBookingDetail" style="display:none;">
+        <button class="btn btn-outline btn-sm" style="margin-bottom: 20px;" onclick="window.KishindoApp.closeBookingDetail()">← Back to All Bookings</button>
+        
+        <div class="card-white" style="margin-bottom: 24px;">
+          <div class="banner-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span id="detailNbidTitle" style="font-weight:700;">Booking NBID</span>
+              <span id="detailStageBadge"></span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-outline btn-sm no-print" onclick="window.KishindoApp.openEditBookingModal()">✏️ Edit Booking</button>
+              <button id="cancelBookingActionBtn" class="btn btn-outline btn-sm no-print" onclick="window.KishindoApp.toggleCancelCurrentBooking()">🚫 Cancel Booking</button>
+              <button id="deleteBookingBtn" class="btn btn-danger btn-sm no-print" style="display:none;" onclick="window.KishindoApp.deleteBookingAction()">🗑️ Delete Booking Permanently</button>
+              <button class="btn btn-primary btn-sm no-print" onclick="window.KishindoApp.printDocument()">🖨 Print This PDF</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <p id="detailStayInfo" style="font-size:14px; color:var(--charcoal-muted); margin-bottom: 20px;"></p>
+
+            <!-- Agent & Contact Info Callout -->
+            <div id="detailAgentContactBox" style="display:none;background:var(--sand-light);border-left:3px solid var(--brand-ochre);padding:12px 18px;margin-bottom:24px;border-radius:var(--radius-sm);font-size:13px;">
+              <div id="detailAgentRow" style="margin-bottom:4px;"></div>
+              <div id="detailContactRow"></div>
+            </div>
+
+            <!-- 1-Click Operations Summary Copy Box -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+              <span style="font-size:11px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;">Operations Copy & Paste (Exact Format)</span>
+              <button class="btn btn-ochre btn-sm" onclick="window.KishindoApp.copyOpsSummary()">📋 Copy Summary</button>
+            </div>
+            <pre id="opsSummaryOutput" class="ops-summary-pre"></pre>
+
+            <!-- 1-Click Outlook Email Template Box -->
+            <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-light);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; flex-wrap:wrap; gap:8px;">
+                <span style="font-size:11px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;">Outlook Email Dispatcher</span>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                  <button class="btn btn-outline btn-sm email-tab-btn active" data-type="provisional" onclick="window.KishindoApp.switchEmailTab('provisional')">1. Provisional (Pre-Deposit)</button>
+                  <button class="btn btn-outline btn-sm email-tab-btn" data-type="confirmed" onclick="window.KishindoApp.switchEmailTab('confirmed')">2. Confirmed (Deposit Paid)</button>
+                  <button class="btn btn-outline btn-sm email-tab-btn" data-type="ready" onclick="window.KishindoApp.switchEmailTab('ready')">3. Sanctuary Ready (Cleared)</button>
+                  <button class="btn btn-primary btn-sm" onclick="window.KishindoApp.copyEmailPreview()">✉ Copy Email</button>
+                </div>
+              </div>
+              <pre id="emailPreviewOutput" class="ops-summary-pre" style="background:#FFFFFF; border-color:var(--brand-ochre);"></pre>
+            </div>
+
+            <!-- Detailed Rooming Breakout -->
+            <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-light);">
+              <h3 style="font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 16px;">Assigned Suites & Guest Profiles</h3>
+              <div id="roomingDetailsContainer"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
     </div>
-    <div id="staffBookingDetail" style="display:none;">
-      <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.closeBookingDetail()">← Back</button>
-      <h3 id="detailNbidTitle"></h3>
-      <span id="detailStageBadge" class="badge-status"></span>
-      <p id="detailStayInfo"></p>
-      <button id="cancelBookingActionBtn" class="btn btn-outline btn-sm" onclick="window.KishindoApp.toggleCancelBooking()"></button>
-      <button id="deleteBookingBtn" class="btn btn-danger btn-sm" style="display:none;margin-left:12px;" onclick="window.KishindoApp.deleteBookingAction()">🗑️ Delete Booking</button>
-      <pre id="opsSummaryOutput"></pre>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       MODAL: CREATE NEW BOOKING
+       ══════════════════════════════════════════════════════════════ -->
+  <div id="newBookingModal" class="modal-overlay">
+    <div class="modal-window">
+      <div class="modal-header">
+        <span style="font-size:12px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;">Create Reservation</span>
+        <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.closeNewBookingModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        
+        <div class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">NBID Number (NightsBridge) <span class="req">*</span></label>
+            <input type="text" id="nb_nbid" placeholder="e.g. 116057573" required>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Booking Type</label>
+            <select id="nb_type" onchange="window.KishindoApp.toggleNewBookingAgentFields()">
+              <option value="Agent">Agent / DMC / Tour Operator</option>
+              <option value="Direct">Direct Guest</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Agent Details (shown if Agent booking) -->
+        <div id="nb_agent_fields" class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">Agent / Tour Operator Name</label>
+            <input type="text" id="nb_agent_name" placeholder="e.g. Tears Travel & Tours">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Agent Email Address</label>
+            <input type="email" id="nb_agent_email" placeholder="reservations@tearstravel.com">
+          </div>
+        </div>
+
+        <div class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">Lead Guest / Contact Name <span class="req">*</span></label>
+            <input type="text" id="nb_contact" placeholder="e.g. Emily Carter" required>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Guest Contact Email</label>
+            <input type="email" id="nb_email" placeholder="guest@example.com">
+          </div>
+        </div>
+
+        <div class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">Check-in Date <span class="req">*</span></label>
+            <input type="date" id="nb_checkin" required>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Check-out Date <span class="req">*</span></label>
+            <input type="date" id="nb_checkout" required>
+          </div>
+        </div>
+
+        <div class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">Guest Count (Pax)</label>
+            <input type="number" id="nb_guests" value="2" min="1" max="10">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Booking Stage</label>
+            <select id="nb_stage">
+              <option value="Provisional">Provisional (Awaiting Deposit)</option>
+              <option value="Confirmed">Confirmed (Deposit Received)</option>
+              <option value="Sanctuary Ready">Sanctuary Ready (Balance Cleared)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Suite Allocations (Up to 4 rooms including Guide suite) -->
+        <div style="margin: 20px 0 12px; padding-top: 16px; border-top: 1px solid var(--border-light); font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brand-ochre);">
+          Suite Allocations (Auto-Generates Suite PINs)
+        </div>
+
+        <!-- Room 1 -->
+        <div class="field-row-2" style="margin-bottom: 10px;">
+          <div>
+            <label class="field-label">Room 1</label>
+            <select id="nb_suite_1" onchange="window.KishindoApp.handleSuiteSelectChange(1)">
+              <option value="Tibo">Tibo (Suite 1)</option>
+              <option value="Ussuri">Ussuri (Suite 2)</option>
+              <option value="Zaria">Zaria (Suite 3)</option>
+              <option value="Guide">Guide's Room (Suite 4)</option>
+              <option value="">— None —</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <label class="field-label">Bed Setup</label>
+              <select id="nb_bed_1">
+                <option value="King Bed">King Bed</option>
+                <option value="Twin Beds">Twin Beds</option>
+                <option value="— None —">— None —</option>
+              </select>
+            </div>
+            <div style="width:90px;">
+              <label class="field-label">PIN</label>
+              <input type="text" id="nb_pin_1" maxlength="4" placeholder="Auto" style="text-align:center;font-weight:600;letter-spacing:0.1em;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Room 2 -->
+        <div class="field-row-2" style="margin-bottom: 10px;">
+          <div>
+            <label class="field-label">Room 2</label>
+            <select id="nb_suite_2" onchange="window.KishindoApp.handleSuiteSelectChange(2)">
+              <option value="">— None —</option>
+              <option value="Tibo">Tibo (Suite 1)</option>
+              <option value="Ussuri" selected>Ussuri (Suite 2)</option>
+              <option value="Zaria">Zaria (Suite 3)</option>
+              <option value="Guide">Guide's Room (Suite 4)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <label class="field-label">Bed Setup</label>
+              <select id="nb_bed_2">
+                <option value="King Bed">King Bed</option>
+                <option value="Twin Beds">Twin Beds</option>
+                <option value="— None —">— None —</option>
+              </select>
+            </div>
+            <div style="width:90px;">
+              <label class="field-label">PIN</label>
+              <input type="text" id="nb_pin_2" maxlength="4" placeholder="Auto" style="text-align:center;font-weight:600;letter-spacing:0.1em;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Room 3 -->
+        <div class="field-row-2" style="margin-bottom: 10px;">
+          <div>
+            <label class="field-label">Room 3</label>
+            <select id="nb_suite_3" onchange="window.KishindoApp.handleSuiteSelectChange(3)">
+              <option value="" selected>— None —</option>
+              <option value="Tibo">Tibo (Suite 1)</option>
+              <option value="Ussuri">Ussuri (Suite 2)</option>
+              <option value="Zaria">Zaria (Suite 3)</option>
+              <option value="Guide">Guide's Room (Suite 4)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <label class="field-label">Bed Setup</label>
+              <select id="nb_bed_3">
+                <option value="— None —" selected>— None —</option>
+                <option value="King Bed">King Bed</option>
+                <option value="Twin Beds">Twin Beds</option>
+              </select>
+            </div>
+            <div style="width:90px;">
+              <label class="field-label">PIN</label>
+              <input type="text" id="nb_pin_3" maxlength="4" placeholder="Auto" style="text-align:center;font-weight:600;letter-spacing:0.1em;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Room 4 (Guide's Room) -->
+        <div class="field-row-2" style="margin-bottom: 16px;">
+          <div>
+            <label class="field-label">Room 4</label>
+            <select id="nb_suite_4" onchange="window.KishindoApp.handleSuiteSelectChange(4)">
+              <option value="" selected>— None —</option>
+              <option value="Guide">Guide's Room (Suite 4)</option>
+              <option value="Tibo">Tibo (Suite 1)</option>
+              <option value="Ussuri">Ussuri (Suite 2)</option>
+              <option value="Zaria">Zaria (Suite 3)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <label class="field-label">Bed Setup</label>
+              <select id="nb_bed_4">
+                <option value="— None —" selected>— None —</option>
+                <option value="King Bed">King Bed</option>
+                <option value="Twin Beds">Twin Beds</option>
+              </select>
+            </div>
+            <div style="width:90px;">
+              <label class="field-label">PIN</label>
+              <input type="text" id="nb_pin_4" maxlength="4" placeholder="Auto" style="text-align:center;font-weight:600;letter-spacing:0.1em;">
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Extras / Levies</label>
+          <input type="text" id="nb_extras" value="Conservation levies" placeholder="e.g. Conservation levies, Private Photographic Vehicle">
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
+          <button class="btn btn-outline" onclick="window.KishindoApp.closeNewBookingModal()">Cancel</button>
+          <button class="btn btn-ochre" onclick="window.KishindoApp.submitNewBooking()">Create Reservation</button>
+        </div>
+
+      </div>
     </div>
   </div>
 
+  <!-- ══════════════════════════════════════════════════════════════
+       MODAL: EDIT EXISTING BOOKING
+       ══════════════════════════════════════════════════════════════ -->
+  <div id="editBookingModal" class="modal-overlay">
+    <div class="modal-window">
+      <div class="modal-header">
+        <span style="font-size:12px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;">Edit Reservation</span>
+        <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.closeEditBookingModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="eb_nbid">
+
+        <div class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">Booking Type</label>
+            <select id="eb_type" onchange="window.KishindoApp.toggleEditBookingAgentFields()">
+              <option value="Agent">Agent / DMC / Tour Operator</option>
+              <option value="Direct">Direct Guest</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Booking Stage</label>
+            <select id="eb_stage">
+              <option value="Provisional">Provisional (Awaiting Deposit)</option>
+              <option value="Confirmed">Confirmed (Deposit Received)</option>
+              <option value="Sanctuary Ready">Sanctuary Ready (Balance Cleared)</option>
+              <option value="Cancelled">Cancelled (Noted / Inactive)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Agent Details -->
+        <div id="eb_agent_fields" class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">Agent / Tour Operator Name</label>
+            <input type="text" id="eb_agent_name" placeholder="e.g. Tears Travel & Tours">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Agent Email Address</label>
+            <input type="email" id="eb_agent_email" placeholder="reservations@tearstravel.com">
+          </div>
+        </div>
+
+        <div class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">Lead Guest / Contact Name <span class="req">*</span></label>
+            <input type="text" id="eb_contact" required>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Guest Contact Email</label>
+            <input type="email" id="eb_email">
+          </div>
+        </div>
+
+        <div class="field-row-2">
+          <div class="field-group">
+            <label class="field-label">Check-in Date <span class="req">*</span></label>
+            <input type="date" id="eb_checkin" required>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Check-out Date <span class="req">*</span></label>
+            <input type="date" id="eb_checkout" required>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Guest Count (Pax)</label>
+          <input type="number" id="eb_guests" min="1" max="10">
+        </div>
+
+        <!-- Suite Allocations -->
+        <div style="margin: 20px 0 12px; padding-top: 16px; border-top: 1px solid var(--border-light); font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brand-ochre);">
+          Assigned Suites & Custom PINs
+        </div>
+
+        <!-- Room 1 -->
+        <div class="field-row-2" style="margin-bottom: 10px;">
+          <div>
+            <label class="field-label">Room 1</label>
+            <select id="eb_suite_1">
+              <option value="">— None —</option>
+              <option value="Tibo">Tibo (Suite 1)</option>
+              <option value="Ussuri">Ussuri (Suite 2)</option>
+              <option value="Zaria">Zaria (Suite 3)</option>
+              <option value="Guide">Guide's Room (Suite 4)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <label class="field-label">Bed Setup</label>
+              <select id="eb_bed_1">
+                <option value="King Bed">King Bed</option>
+                <option value="Twin Beds">Twin Beds</option>
+                <option value="— None —">— None —</option>
+              </select>
+            </div>
+            <div style="width:90px;">
+              <label class="field-label">PIN</label>
+              <input type="text" id="eb_pin_1" maxlength="4" style="text-align:center;font-weight:600;letter-spacing:0.1em;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Room 2 -->
+        <div class="field-row-2" style="margin-bottom: 10px;">
+          <div>
+            <label class="field-label">Room 2</label>
+            <select id="eb_suite_2">
+              <option value="">— None —</option>
+              <option value="Tibo">Tibo (Suite 1)</option>
+              <option value="Ussuri">Ussuri (Suite 2)</option>
+              <option value="Zaria">Zaria (Suite 3)</option>
+              <option value="Guide">Guide's Room (Suite 4)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <label class="field-label">Bed Setup</label>
+              <select id="eb_bed_2">
+                <option value="King Bed">King Bed</option>
+                <option value="Twin Beds">Twin Beds</option>
+                <option value="— None —">— None —</option>
+              </select>
+            </div>
+            <div style="width:90px;">
+              <label class="field-label">PIN</label>
+              <input type="text" id="eb_pin_2" maxlength="4" style="text-align:center;font-weight:600;letter-spacing:0.1em;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Room 3 -->
+        <div class="field-row-2" style="margin-bottom: 10px;">
+          <div>
+            <label class="field-label">Room 3</label>
+            <select id="eb_suite_3">
+              <option value="">— None —</option>
+              <option value="Tibo">Tibo (Suite 1)</option>
+              <option value="Ussuri">Ussuri (Suite 2)</option>
+              <option value="Zaria">Zaria (Suite 3)</option>
+              <option value="Guide">Guide's Room (Suite 4)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <label class="field-label">Bed Setup</label>
+              <select id="eb_bed_3">
+                <option value="King Bed">King Bed</option>
+                <option value="Twin Beds">Twin Beds</option>
+                <option value="— None —">— None —</option>
+              </select>
+            </div>
+            <div style="width:90px;">
+              <label class="field-label">PIN</label>
+              <input type="text" id="eb_pin_3" maxlength="4" style="text-align:center;font-weight:600;letter-spacing:0.1em;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Room 4 -->
+        <div class="field-row-2" style="margin-bottom: 16px;">
+          <div>
+            <label class="field-label">Room 4</label>
+            <select id="eb_suite_4">
+              <option value="">— None —</option>
+              <option value="Guide">Guide's Room (Suite 4)</option>
+              <option value="Tibo">Tibo (Suite 1)</option>
+              <option value="Ussuri">Ussuri (Suite 2)</option>
+              <option value="Zaria">Zaria (Suite 3)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <label class="field-label">Bed Setup</label>
+              <select id="eb_bed_4">
+                <option value="King Bed">King Bed</option>
+                <option value="Twin Beds">Twin Beds</option>
+                <option value="— None —">— None —</option>
+              </select>
+            </div>
+            <div style="width:90px;">
+              <label class="field-label">PIN</label>
+              <input type="text" id="eb_pin_4" maxlength="4" style="text-align:center;font-weight:600;letter-spacing:0.1em;">
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:24px; padding-top:16px; border-top:1px solid var(--border-light); flex-wrap:wrap; gap:10px;">
+          <button type="button" id="eb_cancel_toggle_btn" class="btn btn-outline btn-sm" onclick="window.KishindoApp.toggleCancelBooking()">🚫 Cancel Booking</button>
+          <div style="display:flex; gap:10px;">
+            <button type="button" class="btn btn-outline" onclick="window.KishindoApp.closeEditBookingModal()">Close</button>
+            <button type="button" class="btn btn-ochre" onclick="window.KishindoApp.submitEditBooking()">Save Changes</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       MODAL: NIGHTSBRIDGE BULK IMPORT
+       ══════════════════════════════════════════════════════════════ -->
+  <div id="nightsBridgeModal" class="modal-overlay">
+    <div class="modal-window">
+      <div class="modal-header">
+        <span style="font-size:12px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;">Import NightsBridge Bookings</span>
+        <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.closeNightsBridgeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px; color:var(--charcoal-muted); margin-bottom:16px;">
+          Import past or upcoming reservations directly from your NightsBridge booking summary sheet. Automatically captures agent details, client emails, and assigned suites.
+        </p>
+
+        <div class="dropzone-box" onclick="document.getElementById('nb_file_input').click()" style="border:2px dashed var(--border-light);padding:24px;text-align:center;border-radius:var(--radius-sm);cursor:pointer;background:var(--bg-white);margin-bottom:16px;">
+          <input type="file" id="nb_file_input" accept=".csv,text/csv" style="display:none;" onchange="window.KishindoApp.handleNightsBridgeFileInput(event)">
+          <div style="font-size:24px; margin-bottom:6px;">📁</div>
+          <div style="font-size:13px; font-weight:600; color:var(--charcoal-dark);">Click to upload NightsBridge CSV</div>
+          <div style="font-size:11px; color:var(--charcoal-muted); margin-top:4px;">or paste booking summary text below</div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">CSV Data / Booking Summary Text</label>
+          <textarea id="nb_csv_textarea" placeholder="Booking Number,Guest Name,Arrival,Departure,Room,Pax,Status,Agent,Agent Email,Email..." style="min-height:120px; font-family:monospace; font-size:12px; width:100%; border:1px solid var(--border-light); border-radius:var(--radius-sm); padding:10px;"></textarea>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+          <button class="btn btn-outline" onclick="window.KishindoApp.closeNightsBridgeModal()">Cancel</button>
+          <button class="btn btn-ochre" onclick="window.KishindoApp.processNightsBridgeImport()">Import Bookings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       MODAL: MANAGE TEAM & USER ROLES (Admin Only)
+       ══════════════════════════════════════════════════════════════ -->
+  <div id="manageTeamModal" class="modal-overlay">
+    <div class="modal-window" style="max-width:680px;">
+      <div class="modal-header">
+        <span style="font-size:12px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;">Manage Team & Roles (Admin Only)</span>
+        <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.closeManageTeamModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Existing Users Table -->
+        <h4 style="font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--brand-ochre);margin-bottom:12px;">Active Staff & Guides</h4>
+        <div id="teamMembersListContainer" style="margin-bottom:28px;">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Add New User Form -->
+        <div style="border-top:1px solid var(--border-light);padding-top:20px;">
+          <h4 style="font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--charcoal-dark);margin-bottom:14px;">+ Add New Team Member</h4>
+          
+          <form onsubmit="event.preventDefault(); window.KishindoApp.submitAddTeamUser();">
+            <div class="field-row-2">
+              <div class="field-group">
+                <label class="field-label">Full Name <span class="req">*</span></label>
+                <input type="text" id="team_user_name" placeholder="e.g. Sarah Jenkins" required>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Email Address <span class="req">*</span></label>
+                <input type="email" id="team_user_email" placeholder="sarah@kishindo.com" required>
+              </div>
+            </div>
+
+            <div class="field-row-2">
+              <div class="field-group">
+                <label class="field-label">Password <span class="req">*</span></label>
+                <input type="password" id="team_user_password" placeholder="At least 6 characters" minlength="6" required>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Role & Access Level <span class="req">*</span></label>
+                <select id="team_user_role">
+                  <option value="anchor">Anchor (Lodge Ops — view, edit, cancel)</option>
+                  <option value="guide">Guide (Field Ops — view rooming & safety)</option>
+                  <option value="admin">Admin (Full Control — delete bookings & manage users)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+              <button type="button" class="btn btn-outline" onclick="window.KishindoApp.closeManageTeamModal()">Close</button>
+              <button type="submit" class="btn btn-ochre">Create Team User</button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Engine -->
   <script src="app.js"></script>
-  <script>
-    // Replace classic PIN login with Firebase Auth for staff page
-    window.KishindoApp.handleStaffLoginEmail = async function () {
-      const email = document.getElementById('staffEmail').value.trim();
-      const pw = document.getElementById('staffPassword').value;
-      const errEl = document.getElementById('staffAuthError');
-      errEl.textContent = '';
-      try {
-        const cred = await firebase.auth().signInWithEmailAndPassword(email, pw);
-        const tokenResult = await cred.user.getIdTokenResult();
-        const role = tokenResult.claims.role || 'staff';
-        window.KishindoApp.currentStaffRole = role;
-        await window.KishindoApp.loadStaffDashboard();
-        window.KishindoApp.showScreen('staffDashboardScreen');
-      } catch (e) {
-        errEl.textContent = e.message || 'Login failed';
-      }
-    };
-    // Helper for DataStore to expose current role (used for admin‑only UI)
-    DataStore.getUserRole = async () => window.KishindoApp.currentStaffRole || 'staff';
-  </script>
 </body>
 </html>

@@ -23,19 +23,19 @@
       description: 'Perched over the canyon rim with a dramatic overhanging balcony, outdoor stone shower, daybed lounge, and optional interleading door to Zaria.'
     },
 
-    'Guide': {
-      title: 'Guide (Suite 4)',
-      occupancy: 2,
-      highlights: 'Work desk, private patio, quiet lounge',
-      amenities: ['Desk', 'Wi‑Fi', 'Coffee maker', 'Mini fridge'],
-      description: 'A quiet suite for the primary guide, with space to review photos and plan routes.'
-    }
-
+    'Zaria': {
       title: 'Zaria (Suite 3)',
       occupancy: 2,
       highlights: 'Private rockery, canyon overhang, outdoor & indoor shower',
       amenities: ['Private rockery', 'Outdoor & indoor shower', 'En-suite bath', 'Fireplace & gas heater', 'Air cooler', 'Wi-Fi & safe'],
       description: 'Our most secluded and private suite, nestled alongside a natural Karoo rockery overhang with both indoor and outdoor starlit showers.'
+    },
+    'Guide': {
+      title: "Guide's Room (Suite 4)",
+      occupancy: 2,
+      highlights: 'Work desk, private patio, dedicated lounge',
+      amenities: ['Desk', 'Wi-Fi', 'Coffee maker', 'Mini fridge', 'Private patio'],
+      description: 'A quiet suite for the primary guide, with space to review photos and plan routes, plus a private patio for relaxation.'
     }
   };
 
@@ -194,6 +194,29 @@
       return store[key] || null;
     },
 
+    async deleteBooking(nbid) {
+      if (this.db) {
+        try {
+          await this.db.collection('bookings').doc(String(nbid)).delete();
+        } catch(e) { console.warn('Firestore delete error, using fallback:', e); }
+      }
+      // Also delete all associated guest responses
+      if (this.db) {
+        try {
+          const snap = await this.db.collection('responses').where('nbid', '==', String(nbid)).get();
+          const batch = this.db.batch();
+          snap.forEach(doc => batch.delete(doc.ref));
+          await batch.commit();
+        } catch(e) { console.warn('Firestore response delete error:', e); }
+      }
+      // LocalStorage fallback
+      const bookings = JSON.parse(localStorage.getItem('kishindo_bookings') || '[]');
+      localStorage.setItem('kishindo_bookings', JSON.stringify(bookings.filter(b => String(b.nbid) !== String(nbid))));
+      const responses = JSON.parse(localStorage.getItem('kishindo_responses') || '{}');
+      Object.keys(responses).forEach(k => { if (k.startsWith(String(nbid) + '_')) delete responses[k]; });
+      localStorage.setItem('kishindo_responses', JSON.stringify(responses));
+    },
+
     async saveResponse(nbid, suite, data, isComplete = false) {
       const key = `${nbid}_${suite}`;
       const record = {
@@ -223,6 +246,72 @@
         }
       }
       return record;
+    },
+
+    async getStaffUsers() {
+      if (this.db) {
+        try {
+          const snapshot = await this.db.collection('staff_users').get();
+          const list = [];
+          snapshot.forEach(doc => list.push(doc.data()));
+          if (list.length) return list;
+        } catch(e) { console.warn('Firestore read staff_users error:', e); }
+      }
+      const raw = localStorage.getItem('kishindo_staff_users');
+      if (raw) {
+        try { return JSON.parse(raw); } catch(e){}
+      }
+      // Seed default accounts for quick setup
+      const defaultUsers = [
+        { name: 'Lodge Administrator', email: 'admin@kishindo.com', role: 'admin', createdAt: '2026-01-01T00:00:00.000Z' },
+        { name: 'Lodge Anchor', email: 'anchor@kishindo.com', role: 'anchor', createdAt: '2026-01-01T00:00:00.000Z' },
+        { name: 'Lead Field Guide', email: 'guide@kishindo.com', role: 'guide', createdAt: '2026-01-01T00:00:00.000Z' }
+      ];
+      localStorage.setItem('kishindo_staff_users', JSON.stringify(defaultUsers));
+      return defaultUsers;
+    },
+
+    async saveStaffUser(user) {
+      const email = user.email.toLowerCase();
+      const record = { ...user, email, updatedAt: new Date().toISOString() };
+      if (this.db) {
+        try {
+          await this.db.collection('staff_users').doc(email).set(record);
+        } catch(e) { console.warn('Firestore save staff_user error:', e); }
+      }
+      const all = await this.getStaffUsers();
+      const idx = all.findIndex(u => u.email.toLowerCase() === email);
+      if (idx !== -1) all[idx] = record; else all.push(record);
+      localStorage.setItem('kishindo_staff_users', JSON.stringify(all));
+      return record;
+    },
+
+    async deleteStaffUser(email) {
+      const normalized = email.toLowerCase();
+      if (this.db) {
+        try {
+          await this.db.collection('staff_users').doc(normalized).delete();
+        } catch(e) { console.warn('Firestore delete staff_user error:', e); }
+      }
+      const all = await this.getStaffUsers();
+      const filtered = all.filter(u => u.email.toLowerCase() !== normalized);
+      localStorage.setItem('kishindo_staff_users', JSON.stringify(filtered));
+    },
+
+    async getStaffUser(email) {
+      const normalized = email.toLowerCase();
+      if (this.db) {
+        try {
+          const doc = await this.db.collection('staff_users').doc(normalized).get();
+          if (doc.exists) return doc.data();
+        } catch(e) { console.warn('Firestore read staff_user error:', e); }
+      }
+      const all = await this.getStaffUsers();
+      return all.find(u => u.email.toLowerCase() === normalized) || null;
+    },
+
+    async getUserRole() {
+      return window.KishindoApp.currentStaffRole || 'anchor';
     }
   };
 
@@ -240,10 +329,14 @@
 
   // ── 4. UI Navigation & Screens ──
   function showScreen(screenId) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.remove('active');
+      s.style.display = 'none';
+    });
     const target = document.getElementById(screenId);
     if (target) {
       target.classList.add('active');
+      target.style.display = 'block';
       window.scrollTo(0, 0);
     }
     State.currentScreen = screenId;
@@ -388,6 +481,7 @@
     evaluateVisibleSections();
     State.currentSectionIndex = 0;
     populateFormFields();
+    syncConditionalFieldVisibility();
     renderCurrentSection();
     showScreen('guestFormScreen');
   }
@@ -404,6 +498,7 @@
 
     const activeEl = document.getElementById(currentSec.id);
     syncGuestFieldsVisibility();
+    syncConditionalFieldVisibility();
     updateDynamicGuestNames();
     if (activeEl) activeEl.classList.add('active');
 
@@ -626,6 +721,25 @@
     }
   }
 
+  function syncConditionalFieldVisibility() {
+    const data = State.formData;
+    // Visit year groups (1–4)
+    for (let i = 1; i <= 4; i++) {
+      const visitEl = document.getElementById(`visitYearGroup${i}`);
+      if (visitEl) visitEl.style.display = data[`Guest${i}VisitedBefore`] === 'Yes' ? 'block' : 'none';
+    }
+    // Dietary detail boxes (1–4)
+    for (let i = 1; i <= 4; i++) {
+      const dietEl = document.getElementById(`dietDetailBox${i}`);
+      if (dietEl) dietEl.style.display = data[`Guest${i}HasDiet`] === 'Yes' ? 'block' : 'none';
+    }
+    // Medical detail boxes (1–4)
+    for (let i = 1; i <= 4; i++) {
+      const medEl = document.getElementById(`medDetailBox${i}`);
+      if (medEl) medEl.style.display = data[`Guest${i}HasMed`] === 'Yes' ? 'block' : 'none';
+    }
+  }
+
   function populateFormFields() {
     const data = State.formData;
     for (const [key, val] of Object.entries(data)) {
@@ -686,7 +800,7 @@
       return `
         <div class="booking-item-card" onclick="window.KishindoApp.openBookingDetail('${b.nbid}')">
           <div class="booking-item-top">
-            <div style="display:flex;align-items:center;">${stageBadge}<span style="font-size:11px;font-weight:600;letter-spacing:0.12em;color:var(--charcoal-muted);">NBID ${b.nbid} · ${b.bookingType}</span></div>
+            <div style="display:flex;align-items:center;">${stageBadge}<span style="font-size:11px;font-weight:600;letter-spacing:0.12em;color:var(--charcoal-muted);">NBID ${b.nbid} · ${b.bookingType === 'Agent' && b.agentName ? `${b.agentName} (Agent)` : b.bookingType}</span></div>
             <span style="font-size:12px;color:var(--brand-ochre);font-weight:600;">Check-in: ${formatDate(b.checkIn)}</span>
           </div>
           <div class="booking-guest-title">${b.contactName}</div>
@@ -711,6 +825,27 @@
     document.getElementById('detailNbidTitle').textContent = `Booking NBID ${booking.nbid} — ${booking.contactName}`;
     document.getElementById('detailStayInfo').textContent = `${formatDate(booking.checkIn)} to ${formatDate(booking.checkOut)} (${booking.nights} nights) · ${booking.guestCount} Guests · ${booking.bookingType}`;
 
+    const agentBox = document.getElementById('detailAgentContactBox');
+    if (agentBox) {
+      if (booking.bookingType === 'Agent') {
+        agentBox.style.display = 'block';
+        const aRow = document.getElementById('detailAgentRow');
+        if (aRow) aRow.innerHTML = `<strong>Booking Agency / DMC:</strong> ${booking.agentName || 'Agent Direct'} ${booking.agentEmail ? `&lt;${booking.agentEmail}&gt;` : ''}`;
+        const cRow = document.getElementById('detailContactRow');
+        if (cRow) cRow.innerHTML = `<strong>Lead Guest Contact:</strong> ${booking.contactName} ${booking.contactEmail ? `&lt;${booking.contactEmail}&gt;` : ''}`;
+      } else {
+        const aRow = document.getElementById('detailAgentRow');
+        const cRow = document.getElementById('detailContactRow');
+        if (booking.contactEmail) {
+          agentBox.style.display = 'block';
+          if (aRow) aRow.innerHTML = `<strong>Booking Type:</strong> Direct Guest`;
+          if (cRow) cRow.innerHTML = `<strong>Guest Contact Email:</strong> ${booking.contactEmail}`;
+        } else {
+          agentBox.style.display = 'none';
+        }
+      }
+    }
+
     const stageBadgeEl = document.getElementById('detailStageBadge');
     if (stageBadgeEl) {
       const stageClass = booking.stage === "Cancelled" ? "badge-cancelled" : booking.stage === "Confirmed" ? "badge-confirmed" : booking.stage === "Sanctuary Ready" ? "badge-ready" : "badge-provisional";
@@ -727,6 +862,15 @@
         cancelBtn.textContent = '🚫 Cancel Booking';
         cancelBtn.style.color = 'var(--error-rust)';
       }
+    }
+
+    // Show delete button for admin role only
+    const deleteBtn = document.getElementById('deleteBookingBtn');
+    if (deleteBtn) {
+      const role = typeof DataStore.getUserRole === 'function'
+        ? await DataStore.getUserRole()
+        : (window.KishindoApp.currentStaffRole || 'staff');
+      deleteBtn.style.display = role === 'admin' ? 'inline-block' : 'none';
     }
 
     // Load responses for all assigned suites
@@ -822,7 +966,10 @@
 
   function updateEmailPreview(booking, stage) {
     const isAgent = booking.bookingType === 'Agent';
-    const hostUrl = window.location.origin + window.location.pathname;
+    const origin = window.location.origin;
+    const path = window.location.pathname.replace(/\/staff\.html.*$/, '/index.html').replace(/\/$/, '/index.html');
+    const hostUrl = origin + path;
+    const recipientName = isAgent ? (booking.agentName || booking.contactName) : booking.contactName;
 
     let greeting = '';
     let statusTitle = '';
@@ -834,8 +981,8 @@
 
     if (stage === 'provisional' || stage === 'pre') {
       greeting = isAgent
-        ? `Dear ${booking.contactName},\n\nThank you for your enquiry. We currently have availability for the requested dates and I have placed the following provisional reservation on hold for your guests:`
-        : `Dear ${booking.contactName},\n\nThank you for choosing Kishindo Conservation Reserve. We are delighted to confirm that your provisional wilderness reservation is on hold as per the following details:`;
+        ? `Dear ${recipientName},\n\nThank you for your enquiry. We currently have availability for the requested dates and I have placed the following provisional reservation on hold for your guests:`
+        : `Dear ${recipientName},\n\nThank you for choosing Kishindo Conservation Reserve. We are delighted to confirm that your provisional wilderness reservation is on hold as per the following details:`;
       statusTitle = 'PROVISIONAL RESERVATION DETAILS (AWAITING DEPOSIT)';
       paymentSchedule = `PAYMENT SCHEDULE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -846,8 +993,8 @@ Please refer to the attached proforma invoice for full pricing and payment instr
 This reservation will remain provisional until the deposit has been received.`;
     } else if (stage === 'confirmed' || stage === 'post') {
       greeting = isAgent
-        ? `Dear ${booking.contactName},\n\nThank you — we have safely received the deposit. I am delighted to confirm that the reservation for your guests at Kishindo Conservation Reserve is now fully confirmed:`
-        : `Dear ${booking.contactName},\n\nThank you — we have safely received your deposit. Your stay at Kishindo Conservation Reserve is now officially confirmed:`;
+        ? `Dear ${recipientName},\n\nThank you — we have safely received the deposit. I am delighted to confirm that the reservation for your guests at Kishindo Conservation Reserve is now fully confirmed:`
+        : `Dear ${recipientName},\n\nThank you — we have safely received your deposit. Your stay at Kishindo Conservation Reserve is now officially confirmed:`;
       statusTitle = 'CONFIRMED RESERVATION DETAILS (DEPOSIT RECEIVED)';
       paymentSchedule = `BALANCE SCHEDULE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -857,8 +1004,8 @@ This reservation will remain provisional until the deposit has been received.`;
 Please refer to your proforma invoice for settlement balance and payment details.`;
     } else { // 'ready' -> Sanctuary Ready
       greeting = isAgent
-        ? `Dear ${booking.contactName},\n\nWe are delighted to confirm that full balance payment has cleared. All arrangements are in place and we are Sanctuary Ready to welcome your guests to the wild:`
-        : `Dear ${booking.contactName},\n\nWe are delighted to confirm that full settlement has cleared. Your suite and private wilderness experiences have been curated with utmost care, and we are Sanctuary Ready for your arrival:`;
+        ? `Dear ${recipientName},\n\nWe are delighted to confirm that full balance payment has cleared. All arrangements are in place and we are Sanctuary Ready to welcome your guests to the wild:`
+        : `Dear ${recipientName},\n\nWe are delighted to confirm that full settlement has cleared. Your suite and private wilderness experiences have been curated with utmost care, and we are Sanctuary Ready for your arrival:`;
       statusTitle = 'SANCTUARY READY — ALL SETTLEMENTS CLEARED';
       paymentSchedule = `SETTLEMENT STATUS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -872,7 +1019,7 @@ Please refer to your proforma invoice for settlement balance and payment details
 ${statusTitle}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   NBID:               ${booking.nbid}
-  Arrival date:       ${formatDate(booking.checkIn)}
+${isAgent ? `  Agency / Operator:  ${booking.agentName || 'Agent Direct'}\n  Agent Email:        ${booking.agentEmail || 'On file'}\n  Lead Guest:         ${booking.contactName}\n` : `  Lead Guest:         ${booking.contactName}\n  Guest Email:        ${booking.contactEmail || 'On file'}\n`}  Arrival date:       ${formatDate(booking.checkIn)}
   Departure date:     ${formatDate(booking.checkOut)}
   Nights:             ${booking.nights}
   Guests:             ${booking.guestCount} Adults
@@ -1140,6 +1287,13 @@ https://kishindowild.com/`;
         card.classList.toggle('selected', cb.checked);
       }
     });
+
+    // Check if running on staff.html portal
+    if (document.getElementById('staffAuthScreen')) {
+      showScreen('staffAuthScreen');
+      if (window.KishindoApp.toggleNewBookingAgentFields) window.KishindoApp.toggleNewBookingAgentFields();
+      if (window.KishindoApp.toggleEditBookingAgentFields) window.KishindoApp.toggleEditBookingAgentFields();
+    }
   });
 
   // Export to global scope
@@ -1287,6 +1441,11 @@ https://kishindowild.com/`;
     if (!booking) return;
 
     document.getElementById("eb_nbid").value = booking.nbid;
+    const aNameEl = document.getElementById("eb_agent_name");
+    if (aNameEl) aNameEl.value = booking.agentName || "";
+    const aEmailEl = document.getElementById("eb_agent_email");
+    if (aEmailEl) aEmailEl.value = booking.agentEmail || "";
+
     document.getElementById("eb_contact").value = booking.contactName || "";
     document.getElementById("eb_email").value = booking.contactEmail || "";
     document.getElementById("eb_checkin").value = booking.checkIn || "";
@@ -1295,20 +1454,23 @@ https://kishindowild.com/`;
     document.getElementById("eb_stage").value = booking.stage || "Provisional";
     document.getElementById("eb_guests").value = booking.guestCount || 2;
 
+    toggleEditBookingAgentFields();
+
     const suites = booking.suites || [];
-    [1, 2, 3].forEach(idx => {
+    [1, 2, 3, 4].forEach(idx => {
       const s = suites[idx - 1];
       const suiteSelect = document.getElementById(`eb_suite_${idx}`);
       const bedSelect = document.getElementById(`eb_bed_${idx}`);
       const pinInput = document.getElementById(`eb_pin_${idx}`);
+      if (!suiteSelect) return;
       if (s) {
         suiteSelect.value = s.name;
-        bedSelect.value = s.bedConfig || "King Bed";
-        pinInput.value = s.pin || "";
+        if (bedSelect) bedSelect.value = s.bedConfig || "King Bed";
+        if (pinInput) pinInput.value = s.pin || "";
       } else {
         suiteSelect.value = "";
-        bedSelect.value = "— None —";
-        pinInput.value = "";
+        if (bedSelect) bedSelect.value = "— None —";
+        if (pinInput) pinInput.value = "";
       }
     });
 
@@ -1335,11 +1497,16 @@ https://kishindowild.com/`;
     const booking = State.staffBookings.find(b => String(b.nbid) === String(nbid));
     if (!booking) return;
 
+    booking.bookingType = document.getElementById("eb_type").value;
+    const aNameEl = document.getElementById("eb_agent_name");
+    booking.agentName = aNameEl ? aNameEl.value.trim() : (booking.agentName || "");
+    const aEmailEl = document.getElementById("eb_agent_email");
+    booking.agentEmail = aEmailEl ? aEmailEl.value.trim() : (booking.agentEmail || "");
+
     booking.contactName = document.getElementById("eb_contact").value.trim();
     booking.contactEmail = document.getElementById("eb_email").value.trim();
     booking.checkIn = document.getElementById("eb_checkin").value;
     booking.checkOut = document.getElementById("eb_checkout").value;
-    booking.bookingType = document.getElementById("eb_type").value;
     booking.stage = document.getElementById("eb_stage").value;
     booking.guestCount = parseInt(document.getElementById("eb_guests").value, 10) || 2;
 
@@ -1348,10 +1515,12 @@ https://kishindowild.com/`;
     booking.nights = Math.max(1, Math.round((coDate - ciDate) / (1000 * 60 * 60 * 24)));
 
     const newSuites = [];
-    [1, 2, 3].forEach(idx => {
-      const sName = document.getElementById(`eb_suite_${idx}`).value;
-      const sBed = document.getElementById(`eb_bed_${idx}`).value;
-      const sPin = document.getElementById(`eb_pin_${idx}`).value.trim();
+    [1, 2, 3, 4].forEach(idx => {
+      const sEl = document.getElementById(`eb_suite_${idx}`);
+      if (!sEl) return;
+      const sName = sEl.value;
+      const sBed = document.getElementById(`eb_bed_${idx}`)?.value || "King Bed";
+      const sPin = document.getElementById(`eb_pin_${idx}`)?.value?.trim() || "";
       if (sName) {
         const oldSuite = (booking.suites || []).find(s => s.name === sName);
         newSuites.push({
@@ -1376,6 +1545,21 @@ https://kishindowild.com/`;
     openBookingDetail(booking.nbid);
     closeEditBookingModal();
     alert(`Reservation NBID ${nbid} successfully updated.`);
+  }
+
+  async function deleteBookingAction() {
+    const nbid = State.selectedBookingNBID;
+    if (!nbid) return;
+    const booking = State.staffBookings.find(b => String(b.nbid) === String(nbid));
+    if (!booking) return;
+
+    const confirmMsg = `⚠️ PERMANENTLY DELETE Booking NBID ${nbid} — ${booking.contactName}?\n\nThis will remove the booking and all guest responses from Firestore and localStorage. This cannot be undone.`;
+    if (!confirm(confirmMsg)) return;
+
+    await DataStore.deleteBooking(nbid);
+    closeBookingDetail();
+    await loadStaffDashboard();
+    alert(`Booking ${nbid} has been permanently deleted.`);
   }
 
   async function toggleCancelBooking() {
@@ -1465,13 +1649,14 @@ https://kishindowild.com/`;
 
     const nbidIdx = findCol(["nbid", "bookingid", "bookingnumber", "bookingno", "reference", "ref"]);
     const nameIdx = findCol(["guestname", "contact", "clientname", "leadname", "customer", "name", "guest"]);
-    const emailIdx = findCol(["email", "mail"]);
+    const emailIdx = findCol(["guestemail", "clientemail", "customeremail", "email", "mail"]);
     const checkinIdx = findCol(["checkin", "arrival", "from", "startdate", "arr"]);
     const checkoutIdx = findCol(["checkout", "departure", "to", "enddate", "dep"]);
     const roomIdx = findCol(["room", "unit", "suitetype", "roomname", "accommodation"]);
     const paxIdx = findCol(["pax", "adults", "guests", "persons", "qty"]);
     const statusIdx = findCol(["status", "state"]);
-    const agentIdx = findCol(["agent", "source", "channel", "company"]);
+    const agentIdx = findCol(["agent", "agency", "source", "channel", "company", "touroperator", "dmc"]);
+    const agentEmailIdx = findCol(["agentemail", "agencyemail", "channelmail", "companyemail"]);
 
     const existingBookings = await DataStore.getBookings();
     let importedCount = 0;
@@ -1491,6 +1676,7 @@ https://kishindowild.com/`;
       const pax = isNaN(rawPax) ? 2 : rawPax;
       const rawStatus = statusIdx !== -1 ? cols[statusIdx].toLowerCase() : "";
       const agentRaw = agentIdx !== -1 ? cols[agentIdx] : "";
+      const agentEmailRaw = agentEmailIdx !== -1 ? cols[agentEmailIdx] : "";
 
       const parseDate = (dStr) => {
         if (!dStr) return new Date().toISOString().split("T")[0];
@@ -1513,6 +1699,7 @@ https://kishindowild.com/`;
       let suiteName = "Ussuri";
       if (/tibo/i.test(roomRaw)) suiteName = "Tibo";
       else if (/zaria/i.test(roomRaw)) suiteName = "Zaria";
+      else if (/guide/i.test(roomRaw)) suiteName = "Guide";
       else if (/ussuri/i.test(roomRaw)) suiteName = "Ussuri";
 
       let stage = "Confirmed";
@@ -1533,6 +1720,8 @@ https://kishindowild.com/`;
       const record = {
         nbid,
         bookingType,
+        agentName: bookingType === "Agent" ? agentRaw : "",
+        agentEmail: bookingType === "Agent" ? agentEmailRaw : "",
         stage,
         contactName,
         contactEmail,
@@ -1579,6 +1768,7 @@ https://kishindowild.com/`;
     submitEditBooking,
     toggleCancelBooking,
     toggleCancelCurrentBooking,
+    deleteBookingAction,
     openNightsBridgeModal,
     closeNightsBridgeModal,
     handleNightsBridgeFileInput,
@@ -1679,9 +1869,207 @@ https://kishindowild.com/`;
         }
       }
     },
+    toggleNewBookingAgentFields() {
+      const type = document.getElementById('nb_type')?.value;
+      const fields = document.getElementById('nb_agent_fields');
+      if (fields) fields.style.display = type === 'Agent' ? 'flex' : 'none';
+    },
+    toggleEditBookingAgentFields() {
+      const type = document.getElementById('eb_type')?.value;
+      const fields = document.getElementById('eb_agent_fields');
+      if (fields) fields.style.display = type === 'Agent' ? 'flex' : 'none';
+    },
+
+    async openManageTeamModal() {
+      const role = typeof DataStore.getUserRole === 'function' ? await DataStore.getUserRole() : window.KishindoApp.currentStaffRole;
+      if (role !== 'admin') {
+        alert('Access restricted to Administrators only.');
+        return;
+      }
+      const modal = document.getElementById('manageTeamModal');
+      if (modal) modal.classList.add('active');
+      await window.KishindoApp.renderTeamMembersList();
+    },
+
+    closeManageTeamModal() {
+      const modal = document.getElementById('manageTeamModal');
+      if (modal) modal.classList.remove('active');
+    },
+
+    async renderTeamMembersList() {
+      const container = document.getElementById('teamMembersListContainer');
+      if (!container) return;
+      const users = await DataStore.getStaffUsers();
+      const currentEmail = (window.KishindoApp.currentStaffEmail || '').toLowerCase();
+
+      if (!users.length) {
+        container.innerHTML = '<p style="color:var(--charcoal-muted);font-size:12px;">No team users registered.</p>';
+        return;
+      }
+
+      container.innerHTML = `
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border-light);text-align:left;color:var(--charcoal-muted);text-transform:uppercase;font-size:10px;letter-spacing:0.1em;">
+              <th style="padding:8px 4px;">User</th>
+              <th style="padding:8px 4px;">Email</th>
+              <th style="padding:8px 4px;">Role</th>
+              <th style="padding:8px 4px;text-align:right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${users.map(u => {
+              const roleBadgeClass = u.role === 'admin' ? 'badge-confirmed' : u.role === 'guide' ? 'badge-ready' : 'badge-partial';
+              const roleName = u.role === 'admin' ? '👑 Admin' : u.role === 'guide' ? '🧭 Guide' : '⚓ Anchor';
+              const isSelf = u.email.toLowerCase() === currentEmail;
+              return `
+                <tr style="border-bottom:1px solid rgba(0,0,0,0.05);">
+                  <td style="padding:10px 4px;font-weight:600;">${u.name || 'Team Member'}</td>
+                  <td style="padding:10px 4px;color:var(--charcoal-muted);">${u.email}</td>
+                  <td style="padding:10px 4px;"><span class="badge-status ${roleBadgeClass}">${roleName}</span></td>
+                  <td style="padding:10px 4px;text-align:right;">
+                    ${isSelf ? '<span style="font-size:11px;color:var(--charcoal-muted);">(Current)</span>' : `<button class="btn btn-danger btn-sm" style="padding:4px 8px;font-size:10px;" onclick="window.KishindoApp.deleteTeamUserAction('${u.email}')">Remove</button>`}
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    },
+
+    async submitAddTeamUser() {
+      const name = document.getElementById('team_user_name').value.trim();
+      const email = document.getElementById('team_user_email').value.trim().toLowerCase();
+      const password = document.getElementById('team_user_password').value;
+      const role = document.getElementById('team_user_role').value;
+
+      if (!name || !email || !password) {
+        alert('Please fill in all user fields.');
+        return;
+      }
+
+      if (DataStore.isFirebaseConfigured() && window.firebase) {
+        let secondaryApp = null;
+        try {
+          secondaryApp = firebase.initializeApp(window.KISHINDO_FIREBASE_CONFIG, "TeamCreation_" + Date.now());
+          await secondaryApp.auth().createUserWithEmailAndPassword(email, password);
+          if (secondaryApp.auth().currentUser && name) {
+            await secondaryApp.auth().currentUser.updateProfile({ displayName: name });
+          }
+        } catch (err) {
+          console.warn("[Kishindo] Firebase user creation note:", err.message);
+        } finally {
+          if (secondaryApp) {
+            try { await secondaryApp.delete(); } catch(e){}
+          }
+        }
+      }
+
+      await DataStore.saveStaffUser({ name, email, role, createdAt: new Date().toISOString() });
+      
+      document.getElementById('team_user_name').value = '';
+      document.getElementById('team_user_email').value = '';
+      document.getElementById('team_user_password').value = '';
+
+      await window.KishindoApp.renderTeamMembersList();
+      alert(`Team member ${name} (${email}) created successfully as ${role.toUpperCase()}.`);
+    },
+
+    async deleteTeamUserAction(email) {
+      if (!confirm(`Remove access for team user ${email}?`)) return;
+      await DataStore.deleteStaffUser(email);
+      await window.KishindoApp.renderTeamMembersList();
+    },
+
+    async handleStaffLoginEmail() {
+      const email = document.getElementById('staffEmail')?.value.trim();
+      const pw = document.getElementById('staffPassword')?.value;
+      const errEl = document.getElementById('staffAuthError');
+      if (errEl) errEl.textContent = '';
+
+      if (!email || !pw) {
+        if (errEl) errEl.textContent = 'Please enter both email and password.';
+        return;
+      }
+
+      let role = 'anchor';
+      let displayName = email;
+
+      if (DataStore.isFirebaseConfigured() && window.firebase) {
+        try {
+          const cred = await firebase.auth().signInWithEmailAndPassword(email, pw);
+          const tokenResult = await cred.user.getIdTokenResult();
+          displayName = cred.user.displayName || email;
+          
+          if (tokenResult.claims && tokenResult.claims.role) {
+            role = tokenResult.claims.role;
+          } else {
+            const userRec = await DataStore.getStaffUser(email);
+            if (userRec && userRec.role) {
+              role = userRec.role;
+            } else if (email.toLowerCase().startsWith('admin@')) {
+              role = 'admin';
+            } else {
+              role = 'anchor';
+            }
+          }
+        } catch (e) {
+          // If Firebase Auth failed, check if offline fallback user matches
+          const localUsers = await DataStore.getStaffUsers();
+          const match = localUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+          if (match) {
+            role = match.role || 'anchor';
+            displayName = match.name || email;
+          } else if (email.toLowerCase().startsWith('admin@')) {
+            role = 'admin';
+          } else {
+            if (errEl) errEl.textContent = e.message || 'Login failed. Please check credentials.';
+            return;
+          }
+        }
+      } else {
+        // Offline / Local demo mode fallback
+        const localUsers = await DataStore.getStaffUsers();
+        const match = localUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+        if (match) {
+          role = match.role || 'anchor';
+          displayName = match.name || email;
+        } else if (email.toLowerCase().startsWith('admin@')) {
+          role = 'admin';
+        } else {
+          role = 'anchor';
+        }
+      }
+
+      window.KishindoApp.currentStaffRole = role;
+      window.KishindoApp.currentStaffEmail = email;
+      window.KishindoApp.currentStaffName = displayName;
+
+      // Update UI role badge
+      const rolePill = document.getElementById('staffUserRolePill');
+      if (rolePill) {
+        rolePill.textContent = `${role === 'admin' ? '👑 Admin' : role === 'guide' ? '🧭 Guide' : '⚓ Anchor'}: ${displayName}`;
+        rolePill.className = `badge-status ${role === 'admin' ? 'badge-confirmed' : role === 'guide' ? 'badge-ready' : 'badge-partial'}`;
+        rolePill.style.display = 'inline-block';
+      }
+
+      const logoutBtn = document.getElementById('headerLogoutBtn');
+      if (logoutBtn) logoutBtn.style.display = 'inline-block';
+
+      // Admin-only buttons visibility
+      const manageBtn = document.getElementById('manageTeamBtn');
+      if (manageBtn) manageBtn.style.display = role === 'admin' ? 'inline-flex' : 'none';
+
+      await loadStaffDashboard();
+      showScreen('staffDashboardScreen');
+    },
+
     async submitNewBooking() {
       const nbid = document.getElementById('nb_nbid').value.trim();
       const type = document.getElementById('nb_type').value;
+      const agentName = document.getElementById('nb_agent_name')?.value?.trim() || '';
+      const agentEmail = document.getElementById('nb_agent_email')?.value?.trim() || '';
       const contact = document.getElementById('nb_contact').value.trim();
       const email = document.getElementById('nb_email').value.trim();
       const checkIn = document.getElementById('nb_checkin').value;
@@ -1696,9 +2084,11 @@ https://kishindowild.com/`;
       }
 
       const suites = [];
-      ['1', '2', '3'].forEach(i => {
-        const sName = document.getElementById(`nb_suite_${i}`).value;
-        const sBed = document.getElementById(`nb_bed_${i}`).value;
+      ['1', '2', '3', '4'].forEach(i => {
+        const sEl = document.getElementById(`nb_suite_${i}`);
+        if (!sEl) return;
+        const sName = sEl.value;
+        const sBed = document.getElementById(`nb_bed_${i}`)?.value;
         const customPin = document.getElementById(`nb_pin_${i}`) ? document.getElementById(`nb_pin_${i}`).value.trim() : '';
         if (sName) {
           const pin = customPin.length === 4 ? customPin : String(Math.floor(1000 + Math.random() * 9000));
@@ -1726,6 +2116,8 @@ https://kishindowild.com/`;
       const newBooking = {
         nbid,
         bookingType: type,
+        agentName,
+        agentEmail,
         stage: stage || 'Provisional',
         contactName: contact,
         contactEmail: email,
@@ -1748,8 +2140,22 @@ https://kishindowild.com/`;
     logout() {
       State.activeSession = null;
       State.formData = {};
+      window.KishindoApp.currentStaffRole = null;
+      window.KishindoApp.currentStaffEmail = null;
+      window.KishindoApp.currentStaffName = null;
+      if (window.firebase && firebase.auth) {
+        try { firebase.auth().signOut(); } catch(e){}
+      }
       document.querySelectorAll('.pin-box').forEach(b => b.value = '');
-      showScreen('authScreen');
+      if (document.getElementById('staffAuthScreen')) {
+        const rolePill = document.getElementById('staffUserRolePill');
+        if (rolePill) rolePill.style.display = 'none';
+        const logoutBtn = document.getElementById('headerLogoutBtn');
+        if (logoutBtn) logoutBtn.style.display = 'none';
+        showScreen('staffAuthScreen');
+      } else {
+        showScreen('authScreen');
+      }
     }
   };
 
