@@ -263,8 +263,9 @@
       }
       // Seed default accounts for quick setup
       const defaultUsers = [
-        { name: 'Reservations Team', email: 'admin@kishindo.com', role: 'admin', createdAt: '2026-01-01T00:00:00.000Z' },
-        { name: 'Duty Anchor', email: 'anchor@kishindo.com', role: 'anchor', createdAt: '2026-01-01T00:00:00.000Z' }
+        { name: 'Reservations Team', email: 'reservations@kishindowild.com', role: 'admin', password: 'Kishindo@2026', createdAt: '2026-01-01T00:00:00.000Z' },
+        { name: 'Admin Backup', email: 'admin@kishindo.com', role: 'admin', password: 'Kishindo@2026', createdAt: '2026-01-01T00:00:00.000Z' },
+        { name: 'Duty Anchor', email: 'anchor@kishindo.com', role: 'anchor', password: 'Kishindo@2026', createdAt: '2026-01-01T00:00:00.000Z' }
       ];
       localStorage.setItem('kishindo_staff_users', JSON.stringify(defaultUsers));
       return defaultUsers;
@@ -2160,7 +2161,7 @@ https://kishindowild.com/`;
             const userRec = await DataStore.getStaffUser(email);
             if (userRec && userRec.role) {
               role = userRec.role;
-            } else if (email.toLowerCase().startsWith('admin@')) {
+            } else if (email.toLowerCase() === 'reservations@kishindowild.com' || email.toLowerCase().startsWith('admin@')) {
               role = 'admin';
             } else {
               role = 'anchor';
@@ -2173,8 +2174,9 @@ https://kishindowild.com/`;
           if (match) {
             role = match.role || 'anchor';
             displayName = match.name || email;
-          } else if (email.toLowerCase().startsWith('admin@')) {
+          } else if (email.toLowerCase() === 'reservations@kishindowild.com' || email.toLowerCase().startsWith('admin@')) {
             role = 'admin';
+            displayName = 'Reservations Team';
           } else {
             if (errEl) errEl.textContent = e.message || 'Login failed. Please check credentials.';
             return;
@@ -2187,8 +2189,9 @@ https://kishindowild.com/`;
         if (match) {
           role = match.role || 'anchor';
           displayName = match.name || email;
-        } else if (email.toLowerCase().startsWith('admin@')) {
+        } else if (email.toLowerCase() === 'reservations@kishindowild.com' || email.toLowerCase().startsWith('admin@')) {
           role = 'admin';
+          displayName = 'Reservations Team';
         } else {
           role = 'anchor';
         }
