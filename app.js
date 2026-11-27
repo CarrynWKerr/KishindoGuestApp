@@ -65,15 +65,15 @@
     },
 
     initLocalDemoData() {
-      const raw = localStorage.getItem('kishindo_bookings');
-      let needsReseed = !raw || raw === '[]' || raw === '{}';
-      if (!needsReseed) {
-        try {
-          const parsed = JSON.parse(raw);
-          if (!Array.isArray(parsed) || parsed.length === 0) needsReseed = true;
-        } catch(e) { needsReseed = true; }
+      // In live production mode or once initialized, never re-seed demo data over cleared data!
+      if (localStorage.getItem('kishindo_initialized')) {
+        return;
       }
-      if (needsReseed) {
+      const raw = localStorage.getItem('kishindo_bookings');
+      if (raw && raw !== '[]' && raw !== '{}') {
+        localStorage.setItem('kishindo_initialized', 'true');
+        return;
+      }
         const demoBookings = [
           {
             nbid: '116057573',
@@ -116,7 +116,6 @@
           }
         ];
         localStorage.setItem('kishindo_bookings', JSON.stringify(demoBookings));
-      }
 
       if (!localStorage.getItem('kishindo_responses')) {
         const demoResponses = {
@@ -155,6 +154,7 @@
         };
         localStorage.setItem('kishindo_responses', JSON.stringify(demoResponses));
       }
+      localStorage.setItem('kishindo_initialized', 'true');
     },
 
     async getBookings() {
@@ -1643,19 +1643,85 @@ https://kishindowild.com/`;
       return result;
     }
 
-    const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ""));
-    const findCol = (terms) => headers.findIndex(h => terms.some(t => h.includes(t)));
+    const rawHeaders = parseCSVLine(lines[0]);
+    const headers = rawHeaders.map(h => h.toLowerCase().trim().replace(/[^a-z0-9]/g, ""));
 
-    const nbidIdx = findCol(["nbid", "bookingid", "bookingnumber", "bookingno", "reference", "ref"]);
-    const nameIdx = findCol(["guestname", "contact", "clientname", "leadname", "customer", "name", "guest"]);
-    const emailIdx = findCol(["guestemail", "clientemail", "customeremail", "email", "mail"]);
-    const checkinIdx = findCol(["checkin", "arrival", "from", "startdate", "arr"]);
-    const checkoutIdx = findCol(["checkout", "departure", "to", "enddate", "dep"]);
-    const roomIdx = findCol(["room", "unit", "suitetype", "roomname", "accommodation"]);
-    const paxIdx = findCol(["pax", "adults", "guests", "persons", "qty"]);
-    const statusIdx = findCol(["status", "state"]);
-    const agentIdx = findCol(["agent", "agency", "source", "channel", "company", "touroperator", "dmc"]);
-    const agentEmailIdx = findCol(["agentemail", "agencyemail", "channelmail", "companyemail"]);
+    // Priority-based column finder with exclusion support
+    const findCol = (priorityTerms, excludeRegex = null) => {
+      for (const term of priorityTerms) {
+        const idx = headers.findIndex(h => {
+          if (excludeRegex && excludeRegex.test(h)) return false;
+          return h === term || h.includes(term);
+        });
+        if (idx !== -1) return idx;
+      }
+      return -1;
+    };
+
+    // 1. Booking Number / NBID (Must NEVER match Agent Reference or Invoice/Property Ref)
+    let nbidIdx = findCol(
+      [
+        "bookingnumber", "bookingno", "bookingid", "nbbookingid", "nightsbridgebookingid",
+        "nbid", "bbid", "reservationnumber", "reservationno", "resno", "resnumber",
+        "nightsbridgeref", "nightsbridgereference"
+      ],
+      /agent|client|customer|guest|property|invoice|voucher|channel/i
+    );
+    if (nbidIdx === -1) {
+      nbidIdx = headers.findIndex(h => {
+        if (/agent|client|customer|guest|property|invoice|voucher|channel/i.test(h)) return false;
+        return /^(booking|reference|ref|foliono|folio)$/i.test(h) || (/(reference|ref)/i.test(h) && !/agent/i.test(h));
+      });
+    }
+
+    // 2. Guest Name & Email
+    const nameIdx = findCol(
+      ["guestname", "clientname", "customername", "leadguest", "contactname", "guest", "client", "customer", "lead", "contact"],
+      /agent|agency|operator|channel|company/i
+    );
+    const emailIdx = findCol(
+      ["guestemail", "clientemail", "customeremail", "email", "mail"],
+      /agent|agency|channel|company/i
+    );
+
+    // 3. Arrival / Check-in Date (Must exclude payment amounts, deposit, total, time, fees)
+    let checkinIdx = findCol(
+      ["checkindate", "checkin", "arrivaldate", "arrival", "startdate", "arrivedate", "fromdate"],
+      /deposit|total|amount|paid|cost|price|balance|rate|time|fee|levy/i
+    );
+    if (checkinIdx === -1) {
+      checkinIdx = headers.findIndex(h => {
+        if (/deposit|total|amount|paid|cost|price|balance|rate|time|fee|levy/i.test(h)) return false;
+        return /^from$/i.test(h) || /^arr(ival)?$/i.test(h);
+      });
+    }
+
+    // 4. Departure / Check-out Date (Must NEVER match "total", "deposit", or other payment columns!)
+    let checkoutIdx = findCol(
+      ["checkoutdate", "checkout", "departuredate", "departure", "enddate", "departdate", "todate"],
+      /deposit|total|amount|paid|cost|price|balance|rate|time|fee|levy/i
+    );
+    if (checkoutIdx === -1) {
+      checkoutIdx = headers.findIndex(h => {
+        if (/deposit|total|amount|paid|cost|price|balance|rate|time|fee|levy/i.test(h)) return false;
+        return /^depart/i.test(h) || /^to$/i.test(h) || /^checkout$/i.test(h);
+      });
+    }
+
+    // 5. Room / Accommodation
+    const roomIdx = findCol(["roomname", "unitname", "suitetype", "roomtype", "room", "unit", "accommodation", "suite"]);
+
+    // 6. Guest Count / Pax (Includes Adults + Children!)
+    const totalPaxIdx = findCol(["totalpax", "totalguests", "totalpersons", "allpax"]);
+    const adultsIdx = findCol(["adults", "adult", "paxadults"], /total/i);
+    const childrenIdx = findCol(["children", "child", "kids", "infants", "paxchildren"]);
+    const genericPaxIdx = findCol(["pax", "guests", "persons", "occupancy", "qty"]);
+
+    // 7. Status & Agency
+    const statusIdx = findCol(["bookingstatus", "status", "state"]);
+    const agentIdx = findCol(["agentname", "agencyname", "agency", "agent", "source", "channel", "touroperator", "dmc", "company"], /email|mail|ref/i);
+    const agentEmailIdx = findCol(["agentemail", "agencyemail", "channelmail", "companyemail", "agentmail"]);
+    const agentRefIdx = findCol(["agentref", "agentreference", "channelref", "agencyref"]);
 
     const existingBookings = await DataStore.getBookings();
     let importedBookingsCount = 0;
@@ -1663,16 +1729,38 @@ https://kishindowild.com/`;
     let skippedCount = 0;
     const seenInBatch = new Set();
 
-    const parseDate = (dStr) => {
-      if (!dStr) return new Date().toISOString().split("T")[0];
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) return dStr;
-      const parts = dStr.split(/[-/]/);
+    const parseDate = (dStr, fallbackDate) => {
+      if (!dStr) return fallbackDate || new Date().toISOString().split("T")[0];
+      const cleaned = String(dStr).trim();
+
+      // Guard: reject payment amounts, currencies, total amounts, or phone numbers
+      // e.g. "R 15,000.00", "15000.00", "$500", "35000"
+      if (/^[R$€£]|(\.\d{2}$)/.test(cleaned.replace(/\s/g, "")) || /^\d{5,}$/.test(cleaned)) {
+        return fallbackDate || new Date().toISOString().split("T")[0];
+      }
+
+      // Format: YYYY-MM-DD
+      if (/^\d{4}-\d{2}-\d{2}$/.test(cleaned)) return cleaned;
+
+      // Format: DD/MM/YYYY or DD-MM-YYYY or YYYY/MM/DD
+      const parts = cleaned.split(/[-/.]/);
       if (parts.length === 3) {
-        if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
+        if (parts[0].length === 4) {
+          // YYYY-MM-DD
+          return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
+        }
+        // DD-MM-YYYY (South Africa / NightsBridge standard)
         return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
       }
-      const d = new Date(dStr);
-      return isNaN(d.getTime()) ? new Date().toISOString().split("T")[0] : d.toISOString().split("T")[0];
+
+      // Try Date parsing for strings like "14 Dec 2026" or "14-Dec-2026"
+      const d = new Date(cleaned);
+      if (!isNaN(d.getTime()) && d.getFullYear() >= 2020 && d.getFullYear() <= 2040) {
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      }
+
+      return fallbackDate || new Date().toISOString().split("T")[0];
     };
 
     for (let i = 1; i < lines.length; i++) {
@@ -1686,7 +1774,7 @@ https://kishindowild.com/`;
       let suiteName = "Ussuri";
       if (/tibo|suite\s*1\b|room\s*1\b/i.test(roomRaw)) suiteName = "Tibo";
       else if (/zaria|suite\s*3\b|room\s*3\b/i.test(roomRaw)) suiteName = "Zaria";
-      else if (/guide|suite\s*4\b|room\s*4\b/i.test(roomRaw)) suiteName = "Guide";
+      else if (/guide|photograph|suite\s*4\b|room\s*4\b/i.test(roomRaw)) suiteName = "Guide";
       else if (/ussuri|suite\s*2\b|room\s*2\b/i.test(roomRaw)) suiteName = "Ussuri";
 
       // Duplicate rule: Multiple rows with the same NBID are allowed (multi-room bookings),
@@ -1702,11 +1790,27 @@ https://kishindowild.com/`;
       const contactEmail = emailIdx !== -1 ? cols[emailIdx] : "";
       const checkInRaw = checkinIdx !== -1 ? cols[checkinIdx] : "";
       const checkOutRaw = checkoutIdx !== -1 ? cols[checkoutIdx] : "";
-      const rawPax = paxIdx !== -1 ? parseInt(cols[paxIdx], 10) : 2;
-      const pax = isNaN(rawPax) ? 2 : rawPax;
+
+      // Calculate Total Pax: Include Adults + Children!
+      let pax = 0;
+      if (adultsIdx !== -1 || childrenIdx !== -1) {
+        const adults = adultsIdx !== -1 ? (parseInt(cols[adultsIdx], 10) || 0) : 0;
+        const children = childrenIdx !== -1 ? (parseInt(cols[childrenIdx], 10) || 0) : 0;
+        pax = adults + children;
+      }
+      if (pax <= 0) {
+        if (totalPaxIdx !== -1) {
+          pax = parseInt(cols[totalPaxIdx], 10) || 0;
+        } else if (genericPaxIdx !== -1) {
+          pax = parseInt(cols[genericPaxIdx], 10) || 0;
+        }
+      }
+      if (pax <= 0) pax = 2; // Default fallback
+
       const rawStatus = statusIdx !== -1 ? cols[statusIdx].toLowerCase() : "";
       const agentRaw = agentIdx !== -1 ? cols[agentIdx] : "";
       const agentEmailRaw = agentEmailIdx !== -1 ? cols[agentEmailIdx] : "";
+      const agentRef = agentRefIdx !== -1 ? cols[agentRefIdx] : "";
 
       // Check if a booking with this NBID already exists (either in DB or created in this batch)
       const existingBooking = existingBookings.find(b => String(b.nbid) === String(nbid));
@@ -1738,9 +1842,10 @@ https://kishindowild.com/`;
         continue;
       }
 
-      // New reservation
+      // New reservation: parse dates cleanly
       const checkIn = parseDate(checkInRaw);
-      const checkOut = parseDate(checkOutRaw);
+      const defaultCheckout = new Date(new Date(checkIn).getTime() + 86400000).toISOString().split("T")[0];
+      const checkOut = parseDate(checkOutRaw, defaultCheckout);
       const ciDate = new Date(checkIn);
       const coDate = new Date(checkOut);
       const nights = Math.max(1, Math.round((coDate - ciDate) / (1000 * 60 * 60 * 24)));
@@ -1755,6 +1860,9 @@ https://kishindowild.com/`;
       const suites = [
         { name: suiteName, pin, bedConfig: "King Bed", status: "Pending" }
       ];
+
+      const notesParts = [`Imported from NightsBridge (${agentRaw || "Direct"})`];
+      if (agentRef) notesParts.push(`Agent Ref: ${agentRef}`);
 
       const record = {
         nbid,
@@ -1772,7 +1880,7 @@ https://kishindowild.com/`;
         extras: "Conservation levies",
         depositDue: new Date().toISOString().split("T")[0],
         balanceDue: checkIn,
-        notes: `Imported from NightsBridge (${agentRaw || "Direct"})`,
+        notes: notesParts.join(" · "),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
