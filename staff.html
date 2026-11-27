@@ -39,6 +39,7 @@
       <div class="header-actions" style="display:flex;align-items:center;gap:10px;">
         <span id="staffUserRolePill" class="badge-status badge-ready" style="display:none;font-size:11px;font-weight:600;padding:4px 12px;"></span>
         <button id="headerLogoutBtn" class="btn btn-outline btn-sm no-print" onclick="window.KishindoApp.logout()" style="display:none;">Log Out</button>
+        <a href="/" class="btn btn-outline btn-sm no-print">Guest Login</a>
         <a href="https://kishindowild.com/" target="_blank" class="btn btn-outline btn-sm no-print">Website</a>
       </div>
     </div>
@@ -51,14 +52,14 @@
     <div class="content-wrap" style="max-width: 500px; margin-top: 50px;">
       <div class="auth-hero" style="text-align:center;margin-bottom:28px;">
         <img src="kishindo-logo.png" alt="Kishindo Conservation Reserve" class="auth-logo-img">
-        <h1 class="auth-title">Lodge Anchor Portal</h1>
+        <h1 class="auth-title">Kishindo Operations Portal</h1>
         <p class="auth-subquote">
-          Operations, reservations management & guest arrival registry.
+          Reservations management & guest arrival registry for Anchors and Admins.
         </p>
       </div>
 
       <div class="card-white" style="box-shadow: var(--shadow-elevated);">
-        <div class="banner-card" style="text-align: center;">Sign In to Operations</div>
+        <div class="banner-card" style="text-align: center;">Sign In to Operations (Admin / Anchor)</div>
         <div class="card-body" style="padding: 32px 36px;">
           <form onsubmit="event.preventDefault(); window.KishindoApp.handleStaffLoginEmail();">
             <div class="field-group">
@@ -72,6 +73,11 @@
             <div id="staffAuthError" class="error-banner" style="margin-top:14px;"></div>
             <button type="submit" class="btn btn-primary btn-full" style="margin-top: 22px;">Access Lodge Operations →</button>
           </form>
+
+          <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-light); text-align: center;">
+            <span style="font-size: 13px; color: var(--charcoal-muted); display: block; margin-bottom: 10px;">Are you a guest checking in?</span>
+            <a href="/" class="btn btn-outline btn-full" style="text-decoration:none; display:inline-block; box-sizing:border-box;">🔑 Go to Guest Suite Login</a>
+          </div>
         </div>
       </div>
 
@@ -95,6 +101,7 @@
             <p style="font-size: 12px; color: var(--charcoal-muted); margin:4px 0 0;">Real-time guest pre-arrival registry, rooming lists, and email dispatcher</p>
           </div>
           <div class="dashboard-actions-group" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="/" target="_blank" class="btn btn-outline btn-sm" style="text-decoration:none;">🔑 Guest Login Portal ↗</a>
             <button class="btn btn-ochre btn-sm" onclick="window.KishindoApp.openNewBookingModal()">+ New Booking</button>
             <button class="btn btn-outline btn-sm" onclick="window.KishindoApp.openNightsBridgeModal()">📥 Import NightsBridge</button>
             <button class="btn btn-primary btn-sm" onclick="window.KishindoApp.downloadMultiSheetExcel()">📊 Download Excel</button>
@@ -617,7 +624,7 @@
       <div class="modal-body">
         
         <!-- Existing Users Table -->
-        <h4 style="font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--brand-ochre);margin-bottom:12px;">Active Staff & Guides</h4>
+        <h4 style="font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--brand-ochre);margin-bottom:12px;">Active Team Members (Roles: Admin / Anchor)</h4>
         <div id="teamMembersListContainer" style="margin-bottom:28px;">
           <!-- Dynamically populated -->
         </div>
@@ -644,10 +651,10 @@
                 <input type="password" id="team_user_password" placeholder="At least 6 characters" minlength="6" required>
               </div>
               <div class="field-group">
-                <label class="field-label">Role & Access Level <span class="req">*</span></label>
+                <label class="field-label">Assigned Role <span class="req">*</span></label>
                 <select id="team_user_role">
-                  <option value="anchor">Anchor (Lodge Ops — view, edit, cancel)</option>
-                  <option value="admin">Admin (Full Control — delete bookings & manage users)</option>
+                  <option value="anchor">Anchor Role (Lodge Ops — view, edit, import, cancel)</option>
+                  <option value="admin">Admin Role (Full Control — delete bookings & manage team)</option>
                 </select>
               </div>
             </div>

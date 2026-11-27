@@ -263,8 +263,8 @@
       }
       // Seed default accounts for quick setup
       const defaultUsers = [
-        { name: 'Lodge Administrator', email: 'admin@kishindo.com', role: 'admin', createdAt: '2026-01-01T00:00:00.000Z' },
-        { name: 'Lodge Anchor', email: 'anchor@kishindo.com', role: 'anchor', createdAt: '2026-01-01T00:00:00.000Z' }
+        { name: 'Reservations Team', email: 'admin@kishindo.com', role: 'admin', createdAt: '2026-01-01T00:00:00.000Z' },
+        { name: 'Duty Anchor', email: 'anchor@kishindo.com', role: 'anchor', createdAt: '2026-01-01T00:00:00.000Z' }
       ];
       localStorage.setItem('kishindo_staff_users', JSON.stringify(defaultUsers));
       return defaultUsers;
@@ -1658,9 +1658,22 @@ https://kishindowild.com/`;
     const agentEmailIdx = findCol(["agentemail", "agencyemail", "channelmail", "companyemail"]);
 
     const existingBookings = await DataStore.getBookings();
-    let importedCount = 0;
+    let importedBookingsCount = 0;
+    let importedRoomsCount = 0;
     let skippedCount = 0;
     const seenInBatch = new Set();
+
+    const parseDate = (dStr) => {
+      if (!dStr) return new Date().toISOString().split("T")[0];
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) return dStr;
+      const parts = dStr.split(/[-/]/);
+      if (parts.length === 3) {
+        if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
+        return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+      }
+      const d = new Date(dStr);
+      return isNaN(d.getTime()) ? new Date().toISOString().split("T")[0] : d.toISOString().split("T")[0];
+    };
 
     for (let i = 1; i < lines.length; i++) {
       const cols = parseCSVLine(lines[i]);
@@ -1668,54 +1681,69 @@ https://kishindowild.com/`;
 
       const rawNbid = nbidIdx !== -1 ? cols[nbidIdx] : "";
       const nbid = rawNbid ? rawNbid.replace(/[^0-9]/g, "") : String(100000000 + Math.floor(Math.random() * 900000000));
-      
-      // Skip duplicate within the same batch or if already in the system
-      if (seenInBatch.has(String(nbid))) {
+      const roomRaw = roomIdx !== -1 ? cols[roomIdx] : "";
+
+      let suiteName = "Ussuri";
+      if (/tibo|suite\s*1\b|room\s*1\b/i.test(roomRaw)) suiteName = "Tibo";
+      else if (/zaria|suite\s*3\b|room\s*3\b/i.test(roomRaw)) suiteName = "Zaria";
+      else if (/guide|suite\s*4\b|room\s*4\b/i.test(roomRaw)) suiteName = "Guide";
+      else if (/ussuri|suite\s*2\b|room\s*2\b/i.test(roomRaw)) suiteName = "Ussuri";
+
+      // Duplicate rule: Multiple rows with the same NBID are allowed (multi-room bookings),
+      // but an exact duplicate of NBID + Room is skipped.
+      const batchKey = `${nbid}_${suiteName.toLowerCase()}`;
+      if (seenInBatch.has(batchKey)) {
         skippedCount++;
         continue;
       }
-      seenInBatch.add(String(nbid));
-
-      const existingIdx = existingBookings.findIndex(b => String(b.nbid) === String(nbid));
-      if (existingIdx !== -1) {
-        skippedCount++;
-        continue; // Skip duplicate completely
-      }
+      seenInBatch.add(batchKey);
 
       const contactName = nameIdx !== -1 ? cols[nameIdx] : "Valued Guest";
       const contactEmail = emailIdx !== -1 ? cols[emailIdx] : "";
       const checkInRaw = checkinIdx !== -1 ? cols[checkinIdx] : "";
       const checkOutRaw = checkoutIdx !== -1 ? cols[checkoutIdx] : "";
-      const roomRaw = roomIdx !== -1 ? cols[roomIdx] : "";
       const rawPax = paxIdx !== -1 ? parseInt(cols[paxIdx], 10) : 2;
       const pax = isNaN(rawPax) ? 2 : rawPax;
       const rawStatus = statusIdx !== -1 ? cols[statusIdx].toLowerCase() : "";
       const agentRaw = agentIdx !== -1 ? cols[agentIdx] : "";
       const agentEmailRaw = agentEmailIdx !== -1 ? cols[agentEmailIdx] : "";
 
-      const parseDate = (dStr) => {
-        if (!dStr) return new Date().toISOString().split("T")[0];
-        if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) return dStr;
-        const parts = dStr.split(/[-/]/);
-        if (parts.length === 3) {
-          if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
-          return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+      // Check if a booking with this NBID already exists (either in DB or created in this batch)
+      const existingBooking = existingBookings.find(b => String(b.nbid) === String(nbid));
+      if (existingBooking) {
+        if (!Array.isArray(existingBooking.suites)) {
+          existingBooking.suites = [];
         }
-        const d = new Date(dStr);
-        return isNaN(d.getTime()) ? new Date().toISOString().split("T")[0] : d.toISOString().split("T")[0];
-      };
+        const suiteAlreadyExists = existingBooking.suites.some(
+          s => s && s.name && s.name.toLowerCase() === suiteName.toLowerCase()
+        );
+        if (suiteAlreadyExists) {
+          // Both NBID and Room already exist -> skip duplicate
+          skippedCount++;
+          continue;
+        }
 
+        // Same NBID, but a new room: add the suite with its own PIN to this reservation!
+        const pin = String(Math.floor(1000 + Math.random() * 9000));
+        existingBooking.suites.push({
+          name: suiteName,
+          pin,
+          bedConfig: "King Bed",
+          status: "Pending"
+        });
+        existingBooking.guestCount = (existingBooking.guestCount || 0) + pax;
+        existingBooking.updatedAt = new Date().toISOString();
+        await DataStore.saveBooking(existingBooking);
+        importedRoomsCount++;
+        continue;
+      }
+
+      // New reservation
       const checkIn = parseDate(checkInRaw);
       const checkOut = parseDate(checkOutRaw);
       const ciDate = new Date(checkIn);
       const coDate = new Date(checkOut);
       const nights = Math.max(1, Math.round((coDate - ciDate) / (1000 * 60 * 60 * 24)));
-
-      let suiteName = "Ussuri";
-      if (/tibo/i.test(roomRaw)) suiteName = "Tibo";
-      else if (/zaria/i.test(roomRaw)) suiteName = "Zaria";
-      else if (/guide/i.test(roomRaw)) suiteName = "Guide";
-      else if (/ussuri/i.test(roomRaw)) suiteName = "Ussuri";
 
       let stage = "Confirmed";
       if (/cancel/i.test(rawStatus)) stage = "Cancelled";
@@ -1751,13 +1779,13 @@ https://kishindowild.com/`;
 
       existingBookings.push(record);
       await DataStore.saveBooking(record);
-      importedCount++;
+      importedBookingsCount++;
     }
 
     localStorage.setItem("kishindo_bookings", JSON.stringify(existingBookings));
     await loadStaffDashboard();
     closeNightsBridgeModal();
-    alert(`NightsBridge Import Complete:\n• ${importedCount} new reservation(s) imported\n• ${skippedCount} duplicate(s) skipped`);
+    alert(`NightsBridge Import Complete:\n• ${importedBookingsCount} new reservation(s) imported\n• ${importedRoomsCount} additional suite(s) allocated to existing reservations\n• ${skippedCount} duplicate (NBID + room) row(s) skipped`);
   }
 
   window.KishindoApp = {
@@ -1928,7 +1956,7 @@ https://kishindowild.com/`;
           <tbody>
             ${users.map(u => {
               const roleBadgeClass = u.role === 'admin' ? 'badge-confirmed' : 'badge-partial';
-              const roleName = u.role === 'admin' ? '👑 Admin' : '⚓ Anchor';
+              const roleName = u.role === 'admin' ? 'Admin Role' : 'Anchor Role';
               const isSelf = u.email.toLowerCase() === currentEmail;
               return `
                 <tr style="border-bottom:1px solid rgba(0,0,0,0.05);">
@@ -1936,7 +1964,7 @@ https://kishindowild.com/`;
                   <td style="padding:10px 4px;color:var(--charcoal-muted);">${u.email}</td>
                   <td style="padding:10px 4px;"><span class="badge-status ${roleBadgeClass}">${roleName}</span></td>
                   <td style="padding:10px 4px;text-align:right;">
-                    ${isSelf ? '<span style="font-size:11px;color:var(--charcoal-muted);">(Current)</span>' : `<button class="btn btn-danger btn-sm" style="padding:4px 8px;font-size:10px;" onclick="window.KishindoApp.deleteTeamUserAction('${u.email}')">Remove</button>`}
+                    ${isSelf ? '<span style="font-size:11px;color:var(--charcoal-muted);">(Current User)</span>' : `<button class="btn btn-danger btn-sm" style="padding:4px 8px;font-size:10px;" onclick="window.KishindoApp.deleteTeamUserAction('${u.email}')">Remove</button>`}
                   </td>
                 </tr>
               `;
@@ -1955,6 +1983,14 @@ https://kishindowild.com/`;
       if (!name || !email || !password) {
         alert('Please fill in all user fields.');
         return;
+      }
+
+      // Check unique email
+      const existing = await DataStore.getStaffUser(email);
+      if (existing) {
+        if (!confirm(`A user with email "${email}" already exists (${existing.name}, Role: ${existing.role.toUpperCase()}). Do you want to update this user's details and role?`)) {
+          return;
+        }
       }
 
       if (DataStore.isFirebaseConfigured() && window.firebase) {
@@ -2057,7 +2093,7 @@ https://kishindowild.com/`;
       // Update UI role badge
       const rolePill = document.getElementById('staffUserRolePill');
       if (rolePill) {
-        rolePill.textContent = `${role === 'admin' ? '👑 Admin' : '⚓ Anchor'}: ${displayName}`;
+        rolePill.textContent = `${displayName} · ${role === 'admin' ? 'Admin Role' : 'Anchor Role'}`;
         rolePill.className = `badge-status ${role === 'admin' ? 'badge-confirmed' : 'badge-partial'}`;
         rolePill.style.display = 'inline-block';
       }
